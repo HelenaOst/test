@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     ##custom_apps
     'apps.users',
     'apps.core',
+    'apps.cars',
+    'apps.listing',
 
 ]
 
