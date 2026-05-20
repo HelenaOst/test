@@ -9,8 +9,13 @@ class Brand(models.Model):
         return self.name
 
 class CarModel(models.Model):
+    class Meta:
+        db_table = 'car_model'
+        constraints = [
+            models.UniqueConstraint(fields=['brand', 'name'], name='unique_brand_car_model'),
+        ]
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="models")
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
 
     def __str__(self):
         return f"{self.brand.name} {self.name}"

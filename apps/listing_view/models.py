@@ -7,6 +7,11 @@ from apps.users.models import User
 
 # Create your models here.
 class ListingView(BaseModel):
+    class Meta:
+        db_table = 'listing_view'
+        indexes = [
+            models.Index(fields=['created_at'], name='view_created_at_idx'),
+        ]
     listing = models.ForeignKey(
         Listing,
         on_delete=models.CASCADE,

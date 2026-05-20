@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'apps.listing',
     'apps.moderation',
     'apps.listing_view',
+    'apps.payment',
 ]
 
 MIDDLEWARE = [

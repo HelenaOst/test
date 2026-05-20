@@ -1,21 +1,45 @@
 from datetime import datetime
 
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, ValidationError
 from django.db import models
 
 from apps.cars.models import Brand, CarModel
 from apps.core.models import BaseModel
-from apps.users.models import User
+from apps.users.models import Profile, User
 
 
 class Region(models.Model):
+    class Meta:
+        db_table = 'region'
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
 
+
+def validate_max_year(value):
+    current_year = datetime.now().year
+    if value > current_year + 1:
+        raise ValidationError(f"Рік випуску не може бути більшим за {current_year + 1}.")
+
 class Listing(BaseModel):
+    class Meta:
+        db_table = 'listing'
+        # Додаємо індекси для Highload-оптимізації
+        indexes = [
+            # Для швидкого сортування за цінами (Варіант 3 з Celery)
+            models.Index(fields=['price_usd'], name='listing_price_usd_idx'),
+            models.Index(fields=['price_eur'], name='listing_price_eur_idx'),
+            models.Index(fields=['price_uah'], name='listing_price_uah_idx'),
+
+            # Для швидкого пошуку нових/старих машин покупцями
+            models.Index(fields=['year'], name='listing_year_idx'),
+
+            # Для швидкої роботи менеджерів з перевірки оголошень
+            models.Index(fields=['listing_status'], name='listing_status_idx'),
+        ]
+
     class CarConditions(models.TextChoices):
         NEW = 'new', 'Новий'
         USED = 'used', 'Вживаний'
@@ -60,8 +84,15 @@ class Listing(BaseModel):
         BLOCKED = 'blocked', 'Заблоковано'
 
     # characteristics
-    seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name="listings")
-    car_model = models.ForeignKey(CarModel, on_delete=models.CASCADE, related_name="listings")
+    owner_profile = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name="listings")
+
+    car_model = models.ForeignKey(
+        CarModel,
+        on_delete=models.CASCADE,
+        related_name="listings")
 
     color = models.CharField(max_length=50)
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name="listings")
@@ -69,7 +100,7 @@ class Listing(BaseModel):
     year = models.PositiveIntegerField(
         validators=[
             MinValueValidator(1900),
-            MaxValueValidator(datetime.now().year + 1)
+            validate_max_year
         ]
     )
     mileage = models.PositiveIntegerField(help_text='Mileage in kilometers')
@@ -103,7 +134,9 @@ class Listing(BaseModel):
         return f"{self.car_model.brand} {self.car_model} {self.year}"
 
 
-class CarImages(models.Model):
+class CarImage(models.Model):
+    class Meta:
+        db_table = 'car_images'
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="car_images")
     image = models.ImageField(upload_to='listing_images')
     is_main = models.BooleanField(default=False)

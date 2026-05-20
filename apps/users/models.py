@@ -1,58 +1,14 @@
-# AbstractUser — готовий клас юзера від Django.
-# Вже містить поля: username, email, password, first_name,
-# last_name, is_active, date_joined, та методи логіну.
-# Ми його розширюємо, а не пишемо з нуля.
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from apps.core.models import BaseModel  # мій базовий клас, має created_at / updated_at
-
-
-# AbstractUser — беремо всі стандартні поля юзера
-# BaseModel — беремо created_at, updated_at (або що там у тебе)
-class User(AbstractUser, BaseModel):
-
-    # CharField — текстове поле, max_length обов'язковий
-    # unique=True — два юзери не можуть мати однаковий номер
-    phone = models.CharField(max_length=20, unique=True)
-
-    # ImageField — як FileField але перевіряє що це картинка
-    # upload_to — в яку папку зберігати файл на сервері
-    # blank=True — поле необов'язкове (можна не заповнювати)
-    avatar = models.ImageField(upload_to="avatars/", blank=True)
-
-    # ForeignKey — зв'язок "багато до одного"
-    # Багато юзерів можуть мати одну роль
-    # 'Role' в лапках — бо клас Role оголошений нижче в файлі,
-    # Python ще не знає про нього, тому пишемо рядком
-    # on_delete=SET_NULL — якщо роль видалять, юзер не видаляється,
-    # просто його role стане NULL
-    # null=True — дозволяє NULL в базі даних
-    # blank=True — дозволяє не заповнювати в формах/серіалайзерах
-    role = models.ForeignKey(
-        'Role',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True
-    )
-    account_type = models.CharField(
-        max_length=20,
-        choices=[('basic', 'Basic'), ('premium', 'Premium')],
-        default='basic'
-    )
-    account_expires_at = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return self.username  # в адмінці юзер показується як username
+from apps.core.models import BaseModel
 
 
 class CustomPermission(models.Model):
+    class Meta:
+        db_table = 'custom_permission'
 
-    # Читабельна назва: "Може створювати оголошення"
-    name = models.CharField(max_length=100, unique=True)
-
-    # Короткий код для перевірок у коді: "can_create_listing"
-    # Цей не чіпаєш після створення — на нього посилається логіка
+    name = models.CharField(max_length=100)
     codename = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
@@ -60,30 +16,86 @@ class CustomPermission(models.Model):
 
 
 class Role(models.Model):
+    class Meta:
+        db_table = 'role'
 
     # 'buyer', 'seller', 'manager', 'admin'
     name = models.CharField(max_length=50, unique=True)
-
-    # ManyToManyField — одна роль має багато дозволів,
-    # один дозвіл може бути у багатьох ролях
-    # through='RolePermissions' — не створюй таблицю-місток автоматично,
-    # а використовуй мій клас RolePermissions
-    # Навіщо свій клас? Щоб потім можна було додати поля
-    # (наприклад, granted_at — коли дозвіл був виданий)
     permissions = models.ManyToManyField(CustomPermission, through='RolePermissions')
 
     def __str__(self):
         return self.name
 
 
-class RolePermissions(models.Model):
-    # Таблиця-місток: зберігає пари (роль, дозвіл)
-
-    # CASCADE — якщо роль видалять, видаляться і всі її записи тут
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
-    permission = models.ForeignKey(CustomPermission, on_delete=models.CASCADE)
-
+class Profile(BaseModel):
     class Meta:
-        # Захист від дублів — не можна двічі додати
-        # той самий дозвіл до тієї самої ролі
-        unique_together = ('role', 'permission')
+        db_table = 'profile'
+        indexes = [
+            models.Index(fields=['type_profile'], name='profile_type_idx'),
+            models.Index(fields=['account_type'], name='profile_account_type_idx'),
+        ]
+
+    class TypeProfile(models.TextChoices):
+        INDIVIDUAL = 'individual', 'Одиночний користувач'
+        DEALER = 'dealer', 'Автосалон'
+
+    class AccountType(models.TextChoices):
+        BASIC = 'basic', 'Базовий'
+        PREMIUM = 'premium', 'Преміум'
+
+    type_profile = models.CharField(
+        max_length=20,
+        choices=TypeProfile,
+        default=TypeProfile.INDIVIDUAL)
+
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, help_text='Інформація про продавця')
+    logo = models.ImageField(upload_to="profile_logos/", blank=True, null=True)
+    phone = models.CharField(max_length=20)
+
+    account_type = models.CharField(
+        max_length=20,
+        choices=AccountType,
+        default=AccountType.BASIC
+    )
+    account_expires_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.name} [{self.get_type_profile_display()}]"
+
+
+class User(AbstractUser, BaseModel):
+    class Meta:
+        db_table = 'user'
+
+    phone = models.CharField(max_length=20, unique=True)
+    avatar = models.ImageField(upload_to="avatars/", blank=True)
+
+    profile = models.ForeignKey(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='members', )
+
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='users',
+    )
+
+    def __str__(self):
+        return f"{self.username} ({self.role.name if self.role else 'Без ролі'})"
+
+
+class RolePermissions(models.Model):
+    class Meta:
+        db_table = 'role_permissions'
+        constraints = [
+            models.UniqueConstraint(fields=['role', 'permission'], name='unique_role_permission')
+        ]
+
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name='role_permissions')
+    permission = models.ForeignKey(CustomPermission, on_delete=models.CASCADE, related_name='permission_role_junction')
