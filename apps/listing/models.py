@@ -3,12 +3,17 @@ from datetime import datetime
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from rest_framework.exceptions import ValidationError
-
 from apps.cars.models import Brand, CarModel
 from apps.core.models import BaseModel
 from apps.users.models import User
 
+
+class Region(models.Model):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
 
 class Listing(BaseModel):
     class CarConditions(models.TextChoices):
@@ -54,62 +59,13 @@ class Listing(BaseModel):
         REJECTED = 'rejected', 'Відхилено'
         BLOCKED = 'blocked', 'Заблоковано'
 
-    class Region(models.TextChoices):
-        KYIV = 'kyiv', 'Київ'
-        KYIV_REGION = 'kyiv_region', 'Київська область'
-        KHARKIV = 'kharkiv', 'Харків'
-        KHARKIV_REGION = 'kharkiv_region', 'Харківська область'
-        ODESA = 'odesa', 'Одеса'
-        ODESA_REGION = 'odesa_region', 'Одеська область'
-        DNIPRO = 'dnipro', 'Дніпро'
-        DNIPRO_REGION = 'dnipro_region', 'Дніпропетровська область'
-        LVIV = 'lviv', 'Львів'
-        LVIV_REGION = 'lviv_region', 'Львівська область'
-        ZAPORIZHZHIA = 'zaporizhzhia', 'Запоріжжя'
-        ZAPORIZHZHIA_REGION = 'zaporizhzhia_region', 'Запорізька область'
-        VINNYTSIA = 'vinnytsia', 'Вінниця'
-        VINNYTSIA_REGION = 'vinnytsia_region', 'Вінницька область'
-        POLTAVA = 'poltava', 'Полтава'
-        POLTAVA_REGION = 'poltava_region', 'Полтавська область'
-        CHERKASY = 'cherkasy', 'Черкаси'
-        CHERKASY_REGION = 'cherkasy_region', 'Черкаська область'
-        SUMY = 'sumy', 'Суми'
-        SUMY_REGION = 'sumy_region', 'Сумська область'
-        ZHYTOMYR = 'zhytomyr', 'Житомир'
-        ZHYTOMYR_REGION = 'zhytomyr_region', 'Житомирська область'
-        CHERNIHIV = 'chernihiv', 'Чернігів'
-        CHERNIHIV_REGION = 'chernihiv_region', 'Чернігівська область'
-        RIVNE = 'rivne', 'Рівне'
-        RIVNE_REGION = 'rivne_region', 'Рівненська область'
-        LUTSK = 'lutsk', 'Луцьк'
-        VOLYN_REGION = 'volyn_region', 'Волинська область'
-        IVANO_FRANKIVSK = 'ivano_frankivsk', 'Івано-Франківськ'
-        IVANO_FRANKIVSK_REGION = 'ivano_frankivsk_region', 'Івано-Франківська область'
-        TERNOPIL = 'ternopil', 'Тернопіль'
-        TERNOPIL_REGION = 'ternopil_region', 'Тернопільська область'
-        UZHHOROD = 'uzhhorod', 'Ужгород'
-        ZAKARPATTIA_REGION = 'zakarpattia_region', 'Закарпатська область'
-        CHERNIVTSI = 'chernivtsi', 'Чернівці'
-        CHERNIVTSI_REGION = 'chernivtsi_region', 'Чернівецька область'
-        KHERSON = 'kherson', 'Херсон'
-        KHERSON_REGION = 'kherson_region', 'Херсонська область'
-        MYKOLAIV = 'mykolaiv', 'Миколаїв'
-        MYKOLAIV_REGION = 'mykolaiv_region', 'Миколаївська область'
-        KROPYVNYTSKYI = 'kropyvnytskyi', 'Кропивницький'
-        KIROVOHRAD_REGION = 'kirovohrad_region', 'Кіровоградська область'
-        KHMELNYTSKYI = 'khmelnytskyi', 'Хмельницький'
-        KHMELNYTSKYI_REGION = 'khmelnytskyi_region', 'Хмельницька область'
-        CRIMEA = 'crimea', 'Автономна Республіка Крим'
-        DONETSK_REGION = 'donetsk_region', 'Донецька область'
-        LUHANSK_REGION = 'luhansk_region', 'Луганська область'
-
     # characteristics
     seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name="listings")
-    brand = models.ForeignKey(Brand, on_delete=models.CASCADE)
-    car_model = models.ForeignKey(CarModel, on_delete=models.CASCADE)
+    car_model = models.ForeignKey(CarModel, on_delete=models.CASCADE, related_name="listings")
 
     color = models.CharField(max_length=50)
-    region = models.CharField(max_length=50, choices=Region)
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name="listings")
+
     year = models.PositiveIntegerField(
         validators=[
             MinValueValidator(1900),
@@ -142,13 +98,13 @@ class Listing(BaseModel):
     moderation_count = models.PositiveIntegerField(default=0)
 
     published_at = models.DateTimeField(auto_now_add=True)
-    moderated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.brand} {self.car_model} {self.year}"
+        return f"{self.car_model.brand} {self.car_model} {self.year}"
 
 
 class CarImages(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="car_images")
     image = models.ImageField(upload_to='listing_images')
     is_main = models.BooleanField(default=False)
+

@@ -10,7 +10,8 @@ dependencies = [
     "django (>=6.0.5,<7.0.0)",
     "djangorestframework (>=3.17.1,<4.0.0)",
     "mysqlclient (>=2.2.8,<3.0.0)",
-    "python-dotenv (>=1.2.2,<2.0.0)"
+    "python-dotenv (>=1.2.2,<2.0.0)",
+    "pillow (>=12.2.0,<13.0.0)"
 ]
 
 

@@ -35,12 +35,18 @@ class User(AbstractUser, BaseModel):
         null=True,
         blank=True
     )
+    account_type = models.CharField(
+        max_length=20,
+        choices=[('basic', 'Basic'), ('premium', 'Premium')],
+        default='basic'
+    )
+    account_expires_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.username  # в адмінці юзер показується як username
 
 
-class Permissions(models.Model):
+class CustomPermission(models.Model):
 
     # Читабельна назва: "Може створювати оголошення"
     name = models.CharField(max_length=100, unique=True)
@@ -64,7 +70,7 @@ class Role(models.Model):
     # а використовуй мій клас RolePermissions
     # Навіщо свій клас? Щоб потім можна було додати поля
     # (наприклад, granted_at — коли дозвіл був виданий)
-    permissions = models.ManyToManyField(Permissions, through='RolePermissions')
+    permissions = models.ManyToManyField(CustomPermission, through='RolePermissions')
 
     def __str__(self):
         return self.name
@@ -75,52 +81,9 @@ class RolePermissions(models.Model):
 
     # CASCADE — якщо роль видалять, видаляться і всі її записи тут
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
-    permission = models.ForeignKey(Permissions, on_delete=models.CASCADE)
+    permission = models.ForeignKey(CustomPermission, on_delete=models.CASCADE)
 
     class Meta:
         # Захист від дублів — не можна двічі додати
         # той самий дозвіл до тієї самої ролі
         unique_together = ('role', 'permission')
-
-
-class AccountType(models.Model):
-
-    # Це просто константи класу — НЕ поля таблиці
-    # Використовуємо щоб не писати рядки 'basic'/'premium' вручну по всьому коду
-    BASIC = 'basic'
-    PREMIUM = 'premium'
-
-    # Список пар (значення_в_базі, назва_для_людини)
-    # Django використовує це щоб обмежити допустимі значення поля
-    TYPE_CHOICES = [
-        (BASIC, 'Basic'),
-        (PREMIUM, 'Premium'),
-    ]
-
-    # OneToOneField — кожен юзер має рівно один AccountType
-    # Це як ForeignKey але з unique=True
-    # related_name — як дістатись від юзера:
-    # user.account_type  (замість user.accounttype_set)
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        related_name='account_type'
-    )
-
-    # choices обмежує значення тільки тими що в TYPE_CHOICES
-    # default=BASIC — новий акаунт завжди базовий
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default=BASIC)
-
-    # Дата закінчення преміуму
-    # null=True, blank=True — у базового акаунту цього поля немає
-    expires_at = models.DateTimeField(null=True, blank=True)
-
-    def is_premium_active(self):
-        # Метод — не поле в базі, просто логіка
-        from django.utils import timezone
-
-        # Перевіряємо: тип = преміум І дата є І дата ще не минула
-        if self.type == self.PREMIUM and self.expires_at:
-            return self.expires_at > timezone.now()
-
-        return False  # в усіх інших випадках — не активний
