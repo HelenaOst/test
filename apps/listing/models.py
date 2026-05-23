@@ -11,6 +11,7 @@ from apps.users.models import Profile, User
 class Region(models.Model):
     class Meta:
         db_table = 'region'
+        ordering = ['id']
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, unique=True)
 
@@ -26,6 +27,7 @@ def validate_max_year(value):
 class Listing(BaseModel):
     class Meta:
         db_table = 'listing'
+        ordering = ['id']
         # Додаємо індекси для Highload-оптимізації
         indexes = [
             # Для швидкого сортування за цінами (Варіант 3 з Celery)
@@ -137,6 +139,7 @@ class Listing(BaseModel):
 class CarImage(models.Model):
     class Meta:
         db_table = 'car_images'
+        ordering = ['id']
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="car_images")
     image = models.ImageField(upload_to='listing_images')
     is_main = models.BooleanField(default=False)

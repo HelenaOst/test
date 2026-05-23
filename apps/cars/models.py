@@ -3,6 +3,8 @@ from django.db import models
 
 # Create your models here.
 class Brand(models.Model):
+    class Meta:
+        ordering = ['id']
     name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
@@ -11,6 +13,7 @@ class Brand(models.Model):
 class CarModel(models.Model):
     class Meta:
         db_table = 'car_model'
+        ordering = ['id']
         constraints = [
             models.UniqueConstraint(fields=['brand', 'name'], name='unique_brand_car_model'),
         ]

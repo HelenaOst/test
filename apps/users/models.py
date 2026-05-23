@@ -67,6 +67,7 @@ class Profile(BaseModel):
 class User(AbstractUser, BaseModel):
     class Meta:
         db_table = 'user'
+        ordering = ['id']
 
     phone = models.CharField(max_length=20, unique=True)
     avatar = models.ImageField(upload_to="avatars/", blank=True)

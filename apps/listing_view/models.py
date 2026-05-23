@@ -9,6 +9,7 @@ from apps.users.models import User
 class ListingView(BaseModel):
     class Meta:
         db_table = 'listing_view'
+        ordering = ['id']
         indexes = [
             models.Index(fields=['created_at'], name='view_created_at_idx'),
         ]

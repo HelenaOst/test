@@ -31,3 +31,10 @@ class BrandListCreateView(ListCreateAPIView):
 class BrandDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
+
+class CarModelByBrandView(ListCreateAPIView):
+    serializer_class = CarModelReadSerializer
+
+    def get_queryset(self):
+        pk=self.kwargs['pk']
+        return CarModel.objects.filter(brand_id=pk)

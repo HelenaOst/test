@@ -9,6 +9,7 @@ from apps.users.models import User
 class ListingModeration(BaseModel):
     class Meta:
         db_table = 'listing_moderation'
+        ordering = ['id']
     class ModerationAction(models.TextChoices):
         CREATED = 'created', 'Створено'
         EDITED = 'edited', 'Відредаговано продавцем'
