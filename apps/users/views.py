@@ -5,7 +5,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 from apps.users.models import Role
-from apps.users.permissions import IsAdmin, IsAdminOrManager, IsManager, IsSuperUser
+from apps.users.permissions import IsAdmin, IsManager
 from apps.users.serializers import UserProfileUpdateSerializer, UserReadSerializer
 
 UserModel = get_user_model()
@@ -51,7 +51,7 @@ class UserBlockView(GenericAPIView):
 
 
 class UserToAdminView(GenericAPIView):
-    permission_classes = [IsSuperUser]
+    permission_classes = [IsAdmin]
 
     def get_queryset(self):
         return UserModel.objects.exclude(id=self.request.user.id)
