@@ -15,13 +15,13 @@ class RoleSerializer(serializers.ModelSerializer):
 class ProfileReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['id', 'name', 'phone', 'logo', 'description', 'type_profile', 'account_type', 'account_expires_at']
+        fields = ['id', 'name', 'logo', 'description', 'type_profile', 'account_type', 'account_expires_at']
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['name', 'phone', 'logo', 'description']
+        fields = ['name', 'logo', 'description']
 
 
 class UserReadSerializer(serializers.ModelSerializer):
@@ -30,8 +30,8 @@ class UserReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'profile', 'avatar', 'role', 'phone']
-        read_only_fields = ('id', 'role')
+        fields = ['id', 'profile', 'avatar', 'role', 'phone', 'deleted_at']
+        read_only_fields = ('id', 'role', 'deleted_at')
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):

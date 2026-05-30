@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 from apps.core.models import BaseModel
 
@@ -51,7 +52,6 @@ class Profile(BaseModel):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, help_text='Інформація про продавця')
     logo = models.ImageField(upload_to="profile_logos/", blank=True, null=True)
-    phone = models.CharField(max_length=20)
 
     account_type = models.CharField(
         max_length=20,
@@ -70,7 +70,8 @@ class User(AbstractUser, BaseModel):
         ordering = ['id']
 
     phone = models.CharField(max_length=20, unique=True)
-    avatar = models.ImageField(upload_to="avatars/", blank=True)
+    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     profile = models.ForeignKey(
         Profile,
@@ -90,6 +91,16 @@ class User(AbstractUser, BaseModel):
     def __str__(self):
         return f"{self.username} ({self.role.name if self.role else 'Без ролі'})"
 
+    def soft_delete(self):
+        if not self.deleted_at:
+            self.is_active = False
+            self.deleted_at = timezone.now()
+            self.save(update_fields=['is_active', 'deleted_at'])
+
+    def restore(self):
+        self.is_active = True
+        self.deleted_at = None
+        self.save(update_fields=['is_active', 'deleted_at'])
 
 class RolePermissions(models.Model):
     class Meta:
