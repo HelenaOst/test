@@ -1,9 +1,14 @@
-from rest_framework.permissions import BasePermission
+from rest_framework import permissions
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 
 class IsOwner(BasePermission):
     def has_object_permission(self, request, view, obj):
-        return getattr(obj, 'user', obj) == request.user
+        return getattr(obj, 'owner', getattr(obj, 'user', None)) == request.user
+
+class IsImageOwner(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return obj.listing.owner == request.user
 
 class HasPermissionCodename(BasePermission):
     def has_permission(self, request, view):
@@ -21,10 +26,15 @@ class HasPermissionCodename(BasePermission):
             return False
 
         #Ліземо в БД і перевіряємо, чи є у ролі користувача цей codename
-        if not user.role:
+        if user.role_id is None:
             return False
 
         return user.role.permissions.filter(
             codename=required_permission
         ).exists()
 
+class HasPermissionCodenameOrReadOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return HasPermissionCodename().has_permission(request, view)

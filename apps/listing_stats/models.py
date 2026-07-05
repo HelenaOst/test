@@ -6,12 +6,14 @@ from apps.users.models import User
 
 
 # Create your models here.
-class ListingView(BaseModel):
+class ListingStats(BaseModel):
     class Meta:
-        db_table = 'listing_view'
+        db_table = 'listing_stats'
         ordering = ['id']
         indexes = [
-            models.Index(fields=['created_at'], name='view_created_at_idx'),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['listing']),
+            models.Index(fields=['listing', 'created_at']),
         ]
     listing = models.ForeignKey(
         Listing,

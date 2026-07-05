@@ -23,6 +23,12 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['name', 'logo', 'description']
 
+class ProfileUpgradeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ['account_type', 'account_expires_at']
+        read_only_fields = ['account_type', 'account_expires_at']
+
 
 class UserReadSerializer(serializers.ModelSerializer):
     role = RoleSerializer(read_only=True)

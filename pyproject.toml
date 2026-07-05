@@ -5,14 +5,18 @@ description = ""
 authors = [
     {name = "Olena",email = "greoizzi@gmail.com"}
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "django (>=6.0.5,<7.0.0)",
     "djangorestframework (>=3.17.1,<4.0.0)",
     "mysqlclient (>=2.2.8,<3.0.0)",
     "python-dotenv (>=1.2.2,<2.0.0)",
     "pillow (>=12.2.0,<13.0.0)",
-    "djangorestframework-simplejwt (>=5.5.1,<6.0.0)"
+    "djangorestframework-simplejwt (>=5.5.1,<6.0.0)",
+    "celery (>=5.6.3,<6.0.0)",
+    "redis (>=8.0.1,<9.0.0)",
+    "django-celery-results (>=2.6.0,<3.0.0)",
+    "django-celery-beat (>=2.9.0,<3.0.0)"
 ]
 
 

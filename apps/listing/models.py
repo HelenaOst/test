@@ -1,7 +1,6 @@
-from datetime import datetime
-
-from django.core.validators import MaxValueValidator, MinValueValidator, ValidationError
+from django.core.validators import MinValueValidator, ValidationError
 from django.db import models
+from django.utils import timezone
 
 from apps.cars.models import Brand, CarModel
 from apps.core.models import BaseModel
@@ -13,14 +12,14 @@ class Region(models.Model):
         db_table = 'region'
         ordering = ['id']
     name = models.CharField(max_length=100)
-    slug = models.SlugField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True) #mysite.com/regions/sumska-oblast
 
     def __str__(self):
         return self.name
 
 
 def validate_max_year(value):
-    current_year = datetime.now().year
+    current_year = timezone.now().year
     if value > current_year + 1:
         raise ValidationError(f"Рік випуску не може бути більшим за {current_year + 1}.")
 
@@ -39,7 +38,7 @@ class Listing(BaseModel):
             models.Index(fields=['year'], name='listing_year_idx'),
 
             # Для швидкої роботи менеджерів з перевірки оголошень
-            models.Index(fields=['listing_status'], name='listing_status_idx'),
+            models.Index(fields=['status'], name='listing_status_idx'),
         ]
 
     class CarConditions(models.TextChoices):
@@ -84,10 +83,11 @@ class Listing(BaseModel):
         PENDING = 'pending', 'На перевірці'
         REJECTED = 'rejected', 'Відхилено'
         BLOCKED = 'blocked', 'Заблоковано'
+        INACTIVE = 'inactive', 'Знято з продажу продавцем'
 
     # characteristics
-    owner_profile = models.ForeignKey(
-        Profile,
+    owner = models.ForeignKey(
+        User,
         on_delete=models.CASCADE,
         related_name="listings")
 
@@ -124,17 +124,13 @@ class Listing(BaseModel):
     exchange_rate_eur = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     # listing status
-    listing_status = models.CharField(max_length=10, choices=ListingStatus, default=ListingStatus.PENDING)
+    status = models.CharField(max_length=10, choices=ListingStatus, default=ListingStatus.PENDING)
 
     # edit counter
     edit_count = models.PositiveIntegerField(default=0)
-    moderation_count = models.PositiveIntegerField(default=0)
-
-    published_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.car_model.brand} {self.car_model} {self.year}"
-
 
 class CarImage(models.Model):
     class Meta:

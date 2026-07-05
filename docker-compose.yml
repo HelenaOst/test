@@ -8,3 +8,33 @@ services:
     volumes:
       - ./mysql:/var/lib/mysql
     restart: on-failure
+
+  redis:
+    image: redis:alpine
+    restart: on-failure
+
+  celery:
+    build:
+      context: .
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    restart: on-failure
+    command: sh -c "celery -A config worker -l info"
+    depends_on:
+      - redis
+      - db
+
+  celery_beat:
+    build:
+      context: .
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    restart: on-failure
+    command: sh -c "celery -A config beat -l info"
+    depends_on:
+      - redis
+      - db
