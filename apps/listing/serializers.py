@@ -78,8 +78,7 @@ class ListingReadSerializer(serializers.ModelSerializer):
             'price_uah',
             'status',
             'images',
-            'exchange_rate_eur',
-            'exchange_rate_usd',
+            'exchange_rate',
         ]
 
 

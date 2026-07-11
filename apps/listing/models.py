@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from apps.cars.models import Brand, CarModel
 from apps.core.models import BaseModel
+from apps.payment.models import CurrencyRate
 from apps.users.models import Profile, User
 
 
@@ -120,8 +121,12 @@ class Listing(BaseModel):
     price_usd = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     price_eur = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     price_uah = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    exchange_rate_usd = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    exchange_rate_eur = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    exchange_rate = models.ForeignKey(
+        CurrencyRate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     # listing status
     status = models.CharField(max_length=10, choices=ListingStatus, default=ListingStatus.PENDING)
