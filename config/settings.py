@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+from celery.schedules import crontab
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -140,3 +141,10 @@ AUTH_USER_MODEL = "users.User"
 CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+CELERY_BEAT_SCHEDULE = {
+    'fetch-currency-rates-daily': {
+        'task': 'apps.payment.tasks.fetch_currency_rates_task',
+        'schedule': crontab(hour=9, minute=0),
+    },
+}
