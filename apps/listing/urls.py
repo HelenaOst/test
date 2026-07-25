@@ -6,7 +6,6 @@ from apps.listing.views import (
     ListingCreateView,
     ListingDeleteView,
     ListingsListView,
-    ListingStatsView,
     ListingUpdateView,
     ListingView,
     ModeratingListingView,
@@ -27,8 +26,6 @@ urlpatterns = [
     path('delete/<int:pk>/', ListingDeleteView.as_view(), name='listing-delete'),
     path('<int:pk>/photos/', ImagesUploadView.as_view(), name='upload-photos'),
     path('photos/<int:pk>/', ImageDeleteView.as_view(), name='delete-photos'),
-    #Premium seller
-    path('statistics/<int:pk>/', ListingStatsView.as_view(), name='statistics'),
     #Manager
     path('edit/', PendingListingsListView.as_view(), name='edit-listings'),
     path('moderation/<int:pk>/', ModeratingListingView.as_view(), name='moderation-listing'),

@@ -21,7 +21,6 @@ from apps.listing.serializers import (
 )
 from apps.listing.tasks import update_one_listing_prices_task
 from apps.listing_stats.models import ListingStats
-from apps.listing_stats.serializers import ListingStatsSerializer
 from apps.moderation.services import EmailForModeration
 from apps.moderation.tasks import moderation_listings_task
 
@@ -35,6 +34,16 @@ class ListingsListView(ListAPIView):
 class ListingView(RetrieveAPIView):
     queryset = Listing.objects.filter(status='active')
     serializer_class = ListingReadSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        listing = self.get_object()
+        if not request.user.is_authenticated or request.user != listing.owner:
+            ListingStats.objects.create(
+                listing=listing,
+                viewer=request.user if request.user.is_authenticated else None
+            )
+        serializer = self.get_serializer(listing)
+        return Response(serializer.data)
 
 
 class RegionsListView(ListAPIView):
@@ -200,11 +209,3 @@ class ModeratingListingView(UpdateAPIView):
              },
             status=status.HTTP_200_OK
         )
-
-
-# PREMIUM SELLER VIEWS
-class ListingStatsView(RetrieveAPIView):
-    queryset = ListingStats.objects.all()
-    serializer_class = ListingStatsSerializer
-    permission_classes = [HasPermissionCodename]
-    required_permission = 'can_view_statistics'
