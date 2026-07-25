@@ -75,7 +75,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [os.path.join(BASE_DIR, 'templates')],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -147,4 +147,8 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'apps.payment.tasks.fetch_currency_rates_task',
         'schedule': crontab(hour=9, minute=0),
     },
+    'moderate-listings-daily': {
+        'task': 'apps.moderation.tasks.moderation_listings_task',
+        'schedule': crontab(hour=9, minute=5),
+    }
 }

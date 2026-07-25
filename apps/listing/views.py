@@ -19,8 +19,11 @@ from apps.listing.serializers import (
     ListingWriteSerializer,
     RegionSerializer,
 )
+from apps.listing.tasks import update_one_listing_prices_task
 from apps.listing_stats.models import ListingStats
 from apps.listing_stats.serializers import ListingStatsSerializer
+from apps.moderation.services import EmailForModeration
+from apps.moderation.tasks import moderation_listings_task
 
 # PUBLIC VIEWS
 
@@ -62,6 +65,11 @@ class ListingCreateView(CreateAPIView):
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_create_listing'
 
+    def perform_create(self, serializer):
+        listing = serializer.save()
+        moderation_listings_task.delay(listing.id)
+        update_one_listing_prices_task.delay(listing.id)
+
 
 class ListingUpdateView(UpdateAPIView):
     queryset = Listing.objects.filter(status__in=['active', 'rejected'])
@@ -71,9 +79,10 @@ class ListingUpdateView(UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.edit_count >= 3 and instance.status == 'rejected':
+        if instance.edit_count >= 2 and instance.status == 'rejected':
             instance.status = 'inactive'
             instance.save(update_fields=['status'])
+            EmailForModeration.send_blocked_listing_email(instance)
             return Response(
                 {'message': 'Listing has been blocked.',
                  'listing': self.get_serializer(instance).data
@@ -83,12 +92,13 @@ class ListingUpdateView(UpdateAPIView):
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         if instance.status == 'rejected':
-            serializer.save(
+            updated = serializer.save(
                 edit_count=instance.edit_count + 1,
                 status='pending'
             )
         else:
-            serializer.save()
+            updated = serializer.save(status='pending')
+        moderation_listings_task.delay(updated.id)
         return Response(
             {
                 'message': 'Listing has been updated.',
