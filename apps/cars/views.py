@@ -1,7 +1,7 @@
-from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import GenericAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
 
 from apps.cars.models import Brand, CarModel
-from apps.cars.serializers import BrandSerializer, CarModelReadSerializer, CarModelWriteSerializer
+from apps.cars.serializers import BrandSerializer, CarModelReadSerializer, CarModelWriteSerializer, SendEmailSerializer
 from apps.core.permissions.permissions import HasPermissionCodenameOrReadOnly
 
 # Create your views here.
@@ -46,3 +46,6 @@ class CarModelByBrandView(ListAPIView):
     def get_queryset(self):
         pk=self.kwargs['pk']
         return CarModel.objects.filter(brand_id=pk)
+
+class BrandEmailView(GenericAPIView):
+    serializer_class = SendEmailSerializer

@@ -20,3 +20,6 @@ class CarModelWriteSerializer(serializers.ModelSerializer):
         model = CarModel
         fields = ['id', 'brand', 'name']
         read_only_fields = ('id',)
+
+class SendEmailSerializer(serializers.Serializer):
+    message = serializers.CharField()
