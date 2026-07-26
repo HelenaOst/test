@@ -5,8 +5,8 @@ from rest_framework.response import Response
 
 from apps.cars.models import Brand, CarModel
 from apps.cars.serializers import BrandSerializer, CarModelReadSerializer, CarModelWriteSerializer, SendEmailSerializer
+from apps.cars.tasks import send_offer_new_carmodel_task
 from apps.core.permissions.permissions import HasPermissionCodenameOrReadOnly
-from apps.core.services.email_service import EmailService
 
 # Create your views here.
 
@@ -62,10 +62,7 @@ class OfferNewCarModelView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        EmailService.send_email_about_new_carmodel(
-            user=request.user,
-            message=serializer.validated_data['message'],
-        )
+        send_offer_new_carmodel_task.delay(request.user.id, serializer.validated_data['message'])
         return Response(
             {'message': 'Your request has been sent.'},
             status=status.HTTP_200_OK
