@@ -36,6 +36,7 @@ class ListingsListView(ListAPIView):
     serializer_class = ListingReadSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = ListingFilter
+    search_fields = ['description', 'color', 'car_model__name', 'car_model__brand__name']
 
 class ListingView(RetrieveAPIView):
     queryset = Listing.objects.filter(status='active')
