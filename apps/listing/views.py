@@ -2,14 +2,20 @@ from rest_framework import status
 from rest_framework.generics import (
     CreateAPIView,
     DestroyAPIView,
+    GenericAPIView,
     ListAPIView,
     RetrieveAPIView,
     UpdateAPIView,
     get_object_or_404,
 )
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 from apps.core.permissions.permissions import HasPermissionCodename, IsImageOwner, IsOwner
+from apps.core.services.email_service import EmailService
+from apps.listing.filters import ListingFilter
 from apps.listing.models import CarImage, Listing, Region
 from apps.listing.serializers import (
     ImageSerializer,
@@ -18,10 +24,10 @@ from apps.listing.serializers import (
     ListingReadSerializer,
     ListingWriteSerializer,
     RegionSerializer,
+    SendReportSerializer,
 )
 from apps.listing.tasks import update_one_listing_prices_task
 from apps.listing_stats.models import ListingStats
-from apps.moderation.services import EmailForModeration
 from apps.moderation.tasks import moderation_listings_task
 
 # PUBLIC VIEWS
@@ -29,7 +35,8 @@ from apps.moderation.tasks import moderation_listings_task
 class ListingsListView(ListAPIView):
     queryset = Listing.objects.filter(status='active')
     serializer_class = ListingReadSerializer
-
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ListingFilter
 
 class ListingView(RetrieveAPIView):
     queryset = Listing.objects.filter(status='active')
@@ -91,7 +98,7 @@ class ListingUpdateView(UpdateAPIView):
         if instance.edit_count >= 2 and instance.status == 'rejected':
             instance.status = 'inactive'
             instance.save(update_fields=['status'])
-            EmailForModeration.send_blocked_listing_email(instance)
+            EmailService.send_blocked_listing_email(instance)
             return Response(
                 {'message': 'Listing has been blocked.',
                  'listing': self.get_serializer(instance).data
@@ -207,5 +214,23 @@ class ModeratingListingView(UpdateAPIView):
             {'message': 'Listing has been moderated.',
              'listing': serializer.data
              },
+            status=status.HTTP_200_OK
+        )
+
+class ReportAboutProblemView(GenericAPIView):
+    serializer_class = SendReportSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        listing=get_object_or_404(Listing, pk=self.kwargs['pk'])
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        EmailService.send_listing_report_email(
+            user=request.user,
+            listing=listing,
+            message=serializer.validated_data['message'],
+        )
+        return Response(
+            {'message': 'Problem has been sent.'},
             status=status.HTTP_200_OK
         )

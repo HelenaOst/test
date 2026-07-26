@@ -6,6 +6,7 @@ from apps.cars.views import (
     CarModelByBrandView,
     CarModelDetailView,
     CarModelListCreateView,
+    OfferNewCarModelView,
 )
 
 urlpatterns = [
@@ -14,4 +15,5 @@ urlpatterns = [
     path('models/', CarModelListCreateView.as_view(), name='carmodel-list-create'),
     path('models/<int:pk>/', CarModelDetailView.as_view(), name='carmodel-detail'),
     path('brands/<int:pk>/models/', CarModelByBrandView.as_view(), name='brand-models-list-create'),
+    path('request-brand/', OfferNewCarModelView.as_view(), name='offer-new-car-model'),
 ]

@@ -419,6 +419,24 @@ celery = ">=5.2.7,<6.0"
 Django = ">=3.2.25"
 
 [[package]]
+name = "django-filter"
+version = "26.1"
+description = "Django-filter is a reusable Django application for allowing users to filter querysets dynamically."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "django_filter-26.1-py3-none-any.whl", hash = "sha256:7d98ef2899218e6242619b532cb1b95af14e09dfcf74844aecb550ad27b59ff2"},
+    {file = "django_filter-26.1.tar.gz", hash = "sha256:66ea04031b068c77c86e1ac26ced7a3f8f13ce797f5795751707e3deefc58054"},
+]
+
+[package.dependencies]
+Django = ">=5.2"
+
+[package.extras]
+drf = ["djangorestframework"]
+
+[[package]]
 name = "django-timezone-field"
 version = "7.2.2"
 description = "A Django app providing DB, form, and REST framework fields for zoneinfo and pytz timezone objects."
@@ -1048,4 +1066,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "6462eb0bf6da5dd6e7fda6569f77e7860be42f6faea9fc763e64344c49de9aca"
+content-hash = "f218ddc2a4ec57593ee7ce5aa1d2938f567fb1a620837a6e424696b1e6862fa6"

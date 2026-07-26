@@ -130,3 +130,6 @@ class ListingModerationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
         fields = ['status']
+
+class SendReportSerializer(serializers.Serializer):
+    message = serializers.CharField()

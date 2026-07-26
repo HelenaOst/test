@@ -12,6 +12,7 @@ from apps.listing.views import (
     MyListingsListView,
     PendingListingsListView,
     RegionsListView,
+    ReportAboutProblemView,
 )
 
 urlpatterns = [
@@ -29,4 +30,5 @@ urlpatterns = [
     #Manager
     path('edit/', PendingListingsListView.as_view(), name='edit-listings'),
     path('moderation/<int:pk>/', ModeratingListingView.as_view(), name='moderation-listing'),
+    path('report-problem/<int:pk>/', ReportAboutProblemView.as_view(), name='report-about-problem'),
 ]
