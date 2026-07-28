@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from apps.cars.models import Brand, CarModel
 from apps.core.models import BaseModel
+from apps.core.services.upload_image import upload_listing_image
 from apps.payment.models import CurrencyRate
 from apps.users.models import Profile, User
 
@@ -99,7 +100,7 @@ class Listing(BaseModel):
         related_name="listings")
 
     color = models.CharField(max_length=50)
-    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name="listings")
+    region = models.ForeignKey(Region, on_delete=models.PROTECT, related_name="listings")
 
     year = models.PositiveIntegerField(
         validators=[
@@ -143,6 +144,6 @@ class CarImage(models.Model):
         db_table = 'car_images'
         ordering = ['id']
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="car_images")
-    image = models.ImageField(upload_to='listing_images')
+    image = models.ImageField(upload_to=upload_listing_image)
     is_main = models.BooleanField(default=False)
 
