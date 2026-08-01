@@ -2,6 +2,7 @@ from django.db import transaction
 
 from rest_framework import serializers
 
+from apps.cars.serializers import CarModelReadSerializer
 from apps.listing.models import CarImage, Listing, Region
 from apps.users.models import Role
 
@@ -47,12 +48,14 @@ class ImageUploadSerializer(serializers.ModelSerializer):
 
         # всі об'єкти в базі одним SQL-запитом
         CarImage.objects.bulk_create(car_images)
-        return car_images[0] if car_images else None
+        return car_images
 
 
 class ListingReadSerializer(serializers.ModelSerializer):
     region = RegionSerializer(read_only=True)
     images = ImageSerializer(many=True, read_only=True, source='car_images')
+    car_model = CarModelReadSerializer(read_only=True)
+    owner_phone = serializers.CharField(source='owner.phone', read_only=True)
 
     class Meta:
         model = Listing
@@ -79,6 +82,7 @@ class ListingReadSerializer(serializers.ModelSerializer):
             'status',
             'images',
             'exchange_rate',
+            'owner_phone',
         ]
 
 

@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core.models import BaseModel
+from apps.core.services.upload_image import upload_avatar, upload_profile_logo
 
 
 class CustomPermission(models.Model):
@@ -51,7 +52,7 @@ class Profile(BaseModel):
 
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, help_text='Інформація про продавця')
-    logo = models.ImageField(upload_to="profile_logos/", blank=True, null=True)
+    logo = models.ImageField(upload_to=upload_profile_logo, blank=True, null=True)
 
     account_type = models.CharField(
         max_length=20,
@@ -70,7 +71,7 @@ class User(AbstractUser, BaseModel):
         ordering = ['id']
 
     phone = models.CharField(max_length=20, unique=True)
-    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    avatar = models.ImageField(upload_to=upload_avatar, blank=True, null=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     profile = models.ForeignKey(

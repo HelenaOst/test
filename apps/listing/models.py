@@ -13,7 +13,7 @@ from apps.users.models import Profile, User
 class Region(models.Model):
     class Meta:
         db_table = 'region'
-        ordering = ['id']
+        ordering = ["id"]
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, unique=True) #mysite.com/regions/sumska-oblast
 

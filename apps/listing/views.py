@@ -1,4 +1,5 @@
 from rest_framework import status
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import (
     CreateAPIView,
     DestroyAPIView,
@@ -16,6 +17,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from apps.core.permissions.permissions import HasPermissionCodename, IsImageOwner, IsOwner
 from apps.listing.filters import ListingFilter
 from apps.listing.models import CarImage, Listing, Region
+from apps.listing.my_listing_filter import MyListingFilter
 from apps.listing.serializers import (
     ImageSerializer,
     ImageUploadSerializer,
@@ -32,14 +34,42 @@ from apps.moderation.tasks import moderation_listings_task
 # PUBLIC VIEWS
 
 class ListingsListView(ListAPIView):
-    queryset = Listing.objects.filter(status='active')
+    queryset = (Listing.objects.filter(status='active')
+    .select_related(
+        'owner',
+        'car_model',
+        'car_model__brand',
+        'region',
+        'exchange_rate')
+    .prefetch_related('car_images'))
     serializer_class = ListingReadSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    ordering_fields = [
+        "created_at",
+        "price_uah",
+        "price_usd",
+        "price_eur",
+        "year",
+    ]
+    ordering = ["-created_at"]
     filterset_class = ListingFilter
-    search_fields = ['description', 'color', 'car_model__name', 'car_model__brand__name']
+    search_fields = [
+        'description',
+        'color',
+        'car_model__name',
+        'car_model__brand__name']
+
 
 class ListingView(RetrieveAPIView):
-    queryset = Listing.objects.filter(status='active')
+    queryset = (Listing.objects.filter(status='active')
+    .select_related(
+        'owner',
+        'car_model',
+        'car_model__brand',
+        'region',
+        'exchange_rate'
+    )
+    .prefetch_related('car_images'))
     serializer_class = ListingReadSerializer
 
     def retrieve(self, request, *args, **kwargs):
@@ -63,16 +93,37 @@ class MyListingsListView(ListAPIView):
     serializer_class = ListingReadSerializer
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_view_own_listings'
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = MyListingFilter
+    search_fields = [
+        "description",
+        "car_model__name",
+        "car_model__brand__name",
+    ]
+
+    ordering_fields = [
+        "created_at",
+        "price_uah",
+        "price_usd",
+        "price_eur",
+        "year",
+    ]
+
+    ordering = ["-created_at"]
+
 
     def get_queryset(self):
-        queryset = Listing.objects.filter(
-            owner=self.request.user,
+        return (
+            Listing.objects.filter(owner=self.request.user)
+            .select_related(
+                "owner",
+                "car_model",
+                "car_model__brand",
+                "region",
+                "exchange_rate",
+            )
+            .prefetch_related('car_images')
         )
-
-        status_param = self.request.query_params.get('status')
-        if status_param:
-            queryset = queryset.filter(status=status_param)
-        return queryset
 
 
 class ListingCreateView(CreateAPIView):
@@ -177,11 +228,6 @@ class ImageDeleteView(DestroyAPIView):
     permission_classes = [HasPermissionCodename, IsImageOwner]
     required_permission = 'can_delete_own_images'
 
-    def get_object(self):
-        return get_object_or_404(
-            self.get_queryset(),
-            pk=self.kwargs['pk'])
-
     def destroy(self, request, *args, **kwargs):
         photo = self.get_object()
         photo.delete()
@@ -193,7 +239,15 @@ class ImageDeleteView(DestroyAPIView):
 
 # MANAGER VIEWS
 class PendingListingsListView(ListAPIView):
-    queryset = Listing.objects.filter(status='pending')
+    queryset = (Listing.objects.filter(status='pending')
+    .select_related(
+        'owner',
+        'car_model',
+        'car_model__brand',
+        'region',
+        'exchange_rate'
+    )
+    .prefetch_related('car_images'))
     serializer_class = ListingReadSerializer
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_edit_listings'
@@ -217,12 +271,13 @@ class ModeratingListingView(UpdateAPIView):
             status=status.HTTP_200_OK
         )
 
+
 class ReportAboutProblemView(GenericAPIView):
     serializer_class = SendReportSerializer
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        listing=get_object_or_404(Listing, pk=self.kwargs['pk'])
+        listing = get_object_or_404(Listing, pk=self.kwargs['pk'])
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         send_report_email_task.delay(listing.id, request.user.id, serializer.validated_data['message'])
