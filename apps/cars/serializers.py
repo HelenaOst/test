@@ -10,7 +10,7 @@ class BrandSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
 class CarModelReadSerializer(serializers.ModelSerializer):
-    brand = BrandSerializer
+    brand = BrandSerializer(read_only=True)
     class Meta:
         model = CarModel
         fields = ['id', 'brand', 'name']
@@ -22,4 +22,7 @@ class CarModelWriteSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
 class SendEmailSerializer(serializers.Serializer):
-    message = serializers.CharField()
+    message = serializers.CharField(
+        max_length=1000,
+        trim_whitespace=True,
+    )

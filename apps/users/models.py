@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils import timezone
 
@@ -21,7 +21,12 @@ class Role(models.Model):
     class Meta:
         db_table = 'role'
 
-    # 'buyer', 'seller', 'manager', 'admin'
+    class RoleName(models.TextChoices):
+        BUYER = 'buyer', 'Покупець'
+        SELLER = 'seller', 'Продавець'
+        MANAGER = 'manager', 'Менеджер'
+        ADMIN = 'admin', 'Адміністратор'
+
     name = models.CharField(max_length=50, unique=True)
     permissions = models.ManyToManyField(CustomPermission, through='RolePermissions')
 
@@ -65,10 +70,63 @@ class Profile(BaseModel):
         return f"{self.name} [{self.get_type_profile_display()}]"
 
 
+class UserManager(BaseUserManager):
+
+    def create_user(self, username, phone, password=None, **extra_fields):
+        if not username:
+            raise ValueError("Username is required")
+
+        if not phone:
+            raise ValueError("Phone is required")
+
+        user = self.model(
+            username=username,
+            phone=phone,
+            **extra_fields
+        )
+
+        user.set_password(password)
+        user.save(using=self._db)
+
+        return user
+
+    def create_superuser(
+        self,
+        username,
+        phone,
+        password=None,
+        **extra_fields
+    ):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
+        admin_role = Role.objects.get(
+            name=Role.RoleName.ADMIN
+        )
+
+        extra_fields["role"] = admin_role
+
+        return self.create_user(
+            username=username,
+            phone=phone,
+            password=password,
+            **extra_fields
+        )
+
+
 class User(AbstractUser, BaseModel):
     class Meta:
         db_table = 'user'
         ordering = ['id']
+
+    objects = UserManager()
 
     phone = models.CharField(max_length=20, unique=True)
     avatar = models.ImageField(upload_to=upload_avatar, blank=True, null=True)
@@ -88,6 +146,8 @@ class User(AbstractUser, BaseModel):
         blank=True,
         related_name='users',
     )
+
+    REQUIRED_FIELDS = ['phone']
 
     def __str__(self):
         return f"{self.username} ({self.role.name if self.role else 'Без ролі'})"

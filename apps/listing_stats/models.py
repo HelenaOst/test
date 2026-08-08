@@ -9,7 +9,6 @@ from apps.users.models import User
 class ListingStats(BaseModel):
     class Meta:
         db_table = 'listing_stats'
-        ordering = ['id']
         indexes = [
             models.Index(fields=['created_at']),
             models.Index(fields=['listing']),

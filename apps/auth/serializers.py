@@ -1,4 +1,6 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 
 from rest_framework import serializers
@@ -13,18 +15,39 @@ class RegisterSerializer(serializers.Serializer):
     confirm_password = serializers.CharField(write_only=True)
     phone = serializers.CharField(write_only=True)
     role = serializers.ChoiceField(
-        choices=['buyer', 'seller'],
+        choices=[
+            Role.RoleName.BUYER,
+            Role.RoleName.SELLER,
+        ],
         write_only=True
     )
 
     def validate(self, data):
         if data['password'] != data['confirm_password']:
-            raise serializers.ValidationError("Passwords don't match")
+            raise serializers.ValidationError(
+                {"confirm_password": "Passwords don't match."}
+            )
+        try:
+            validate_password(data["password"])
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(
+                {"password": list(e.messages)}
+            )
+
+        if UserModel.objects.filter(email=data['email']).exists():
+            raise serializers.ValidationError(
+                {"email": "Email already exists."}
+            )
+
+        if UserModel.objects.filter(phone=data['phone']).exists():
+            raise serializers.ValidationError(
+                {"phone": "Phone already exists."}
+            )
+
         return data
 
     def create(self, validated_data):
         validated_data.pop('confirm_password')
-        role_name = validated_data.pop('role', 'buyer')
 
         with transaction.atomic():
             user = UserModel.objects.create_user(
@@ -33,9 +56,7 @@ class RegisterSerializer(serializers.Serializer):
                 password=validated_data['password'],
                 phone=validated_data['phone'],
             )
-            user.role = Role.objects.get(name=role_name)
-
-            # створюємо профіль і прив'язуємо до юзера
+            user.role = Role.objects.get(name=Role.RoleName.BUYER)
             profile = Profile.objects.create(name=validated_data['email'])
             user.profile = profile
 

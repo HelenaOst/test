@@ -10,9 +10,11 @@ class ListingStatsSerializer(serializers.Serializer):
     avg_price_region = serializers.DecimalField(
         max_digits=12,
         decimal_places=2,
+        allow_null=True,
         read_only=True)
     avg_price_ukraine = serializers.DecimalField(
         max_digits=12,
         decimal_places=2,
+        allow_null=True,
         read_only=True
     )

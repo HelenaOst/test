@@ -1,7 +1,7 @@
 from django.urls import path
 
-from apps.payment.views import PaymentView
+from apps.payment.views import CurrencyRateView
 
 urlpatterns = [
-    path('rate/', PaymentView.as_view(), name='payment')
+    path('rate/', CurrencyRateView.as_view(), name='payment')
 ]

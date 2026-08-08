@@ -9,7 +9,7 @@ from apps.listing_stats.models import ListingStats
 
 class ListingStatsService:
     @staticmethod
-    def get_stats(listing):
+    def get_stats(listing) -> dict:
         now = timezone.now()
 
         day_ago = now - timedelta(days=1)

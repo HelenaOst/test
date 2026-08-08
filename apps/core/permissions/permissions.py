@@ -1,10 +1,24 @@
 from rest_framework import permissions
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
+from apps.users.models import Role
+
 
 class IsOwner(BasePermission):
     def has_object_permission(self, request, view, obj):
-        return getattr(obj, 'owner', getattr(obj, 'user', None)) == request.user
+        user = request.user
+
+        if user.is_superuser:
+            return True
+
+        if user.role and user.role.name == Role.RoleName.MANAGER:
+            return True
+
+        return getattr(
+            obj,
+            'owner',
+            getattr(obj, 'user', None)
+        ) == user
 
 class IsImageOwner(BasePermission):
     def has_object_permission(self, request, view, obj):

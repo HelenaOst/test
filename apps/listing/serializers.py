@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from apps.cars.serializers import CarModelReadSerializer
 from apps.listing.models import CarImage, Listing, Region
-from apps.users.models import Role
+from apps.users.models import Role, User
 
 
 class RegionSerializer(serializers.ModelSerializer):
@@ -110,6 +110,14 @@ class ListingWriteSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
 
         with transaction.atomic():
+            if user.role and user.role.name == Role.RoleName.ADMIN:
+                raise serializers.ValidationError(
+                    {'message': 'The admin cannot create listing.'}
+                )
+            if user.role and user.role.name == Role.RoleName.MANAGER:
+                raise serializers.ValidationError(
+                    {'message': 'The manager cannot create listing.'}
+                )
             ## перевірка ліміту для базового акаунту
             if user.profile.account_type == 'basic':
                 existing = Listing.objects.filter(
@@ -121,14 +129,14 @@ class ListingWriteSerializer(serializers.ModelSerializer):
                         'Basic account allows only one active listing.'
                     )
 
-        # робимо з покупця продавця при створенні оголошення
-        if user.role.name == 'buyer':
-            seller_role = Role.objects.get(name='seller')
-            user.role = seller_role
-            user.save(update_fields=['role'])
+            # робимо з покупця продавця при створенні оголошення
+            if user.role.name == Role.RoleName.BUYER:
+                seller_role = Role.objects.get(name=Role.RoleName.SELLER)
+                user.role = seller_role
+                user.save(update_fields=['role'])
 
             # присвоєння статусу овнера юзеру
-        return Listing.objects.create(owner=user, **validated_data)
+            return Listing.objects.create(owner=user, **validated_data)
 
 class ListingModerationSerializer(serializers.ModelSerializer):
     class Meta:

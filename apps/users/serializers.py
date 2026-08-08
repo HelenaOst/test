@@ -27,7 +27,7 @@ class ProfileUpgradeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['account_type', 'account_expires_at']
-        read_only_fields = ['account_type', 'account_expires_at']
+        read_only_fields = fields
 
 
 class UserReadSerializer(serializers.ModelSerializer):
