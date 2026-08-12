@@ -59,6 +59,9 @@ docker compose up -d --build
 
 ### 4. Застосувати міграції
 
+ В проекті використовується локальний volume ./mysql:/var/lib/mysql, а не Docker volume. 
+ Це означає, що дані зберігаються прямо у файловій системі в папці mysql всередині проекту.
+
 ```bash
 docker exec -it python_test-app-1 python manage.py migrate
 ```
