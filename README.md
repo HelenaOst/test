@@ -268,7 +268,7 @@ docker exec -it python_test-app-1 python manage.py migrate
 
 ## Тестування
 
-Postman колекція з усіма замоканими запитами знаходиться у файлі `car_shop.postman_collection.json`.
+Postman колекція з усіма замоканими запитами знаходиться у файлі `AutoRia Clone API.postman_collection.json`.
 
 Імпортуй в Postman і встанови змінну `host = http://localhost:8888`.
 
