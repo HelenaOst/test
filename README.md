@@ -54,7 +54,7 @@ MANAGERS_EMAIL=moderation@automarket.com
 ### 3. Запустити Docker
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ### 4. Застосувати міграції
@@ -120,24 +120,26 @@ Celery використовується для фонових задач та п
 ## Основні ендпоінти
 
 ### Auth
-| Метод | URL | Опис            |
-|-------|-----|-----------------|
-| POST | `/api/auth/register/` | Реєстрація      |
-| POST | `/api/auth/login/` | Логін           |
-| POST | `/api/auth/refresh/` | Оновлення токену |
-| POST | `/api/auth/logout/` | Вихід з акаунта |
+| Метод | URL                     | Опис              |
+|-------|-------------------------|-------------------|
+| POST | `/api/auth/register/`   | Реєстрація        |
+| POST | `/api/auth/login/`      | Логін             |
+| POST | `/api/auth/refresh/`    | Оновлення токену  |
+| POST | `/api/auth/logout/`     | Вихід з акаунта   |
 
 ### Users
-| Метод | URL | Опис | Доступ          |
-|-------|-----|------|-----------------|
-| GET | `/api/users/` | Список юзерів | Admin / Manager |
-| GET | `/api/users/me/` | Свій акаунт | Всі             |
-| PATCH | `/api/users/me/update/` | Оновити акаунт | Всі             |
-| DELETE | `/api/users/me/delete/` | Видалити акаунт | Всі             |
-| POST | `/api/users/profile/upgrade/` | Преміум акаунт | Buyer/Seller    |
-| PATCH | `/api/users/<pk>/block/` | Заблокувати юзера | Admin / Manager       |
-| PATCH | `/api/users/<pk>/unblock/` | Розблокувати юзера | Admin / Manager        |
-| PATCH | `/api/users/<pk>/manager/` | Призначити менеджера | Admin       |
+| Метод  | URL                        | Опис                     | Доступ            |
+|--------|----------------------------|--------------------------|-------------------|
+| GET    | `/api/users/`              | Список юзерів            | Admin / Manager   |
+| GET    | `/api/users/me/`           | Свій акаунт              | Всі               |
+| GET    | `/api/users/<pk>/`         | Переглянути акаунт по ID | Всі               |
+| PATCH  | `/api/users/me/update/`    | Оновити власний акаунт   | Всі               |
+| DELETE | `/api/users/me/delete/`    | Видалити власний акаунт  | Всі               |
+| DELETE | `/api/users/<pk>/delete/`  | Видалити акаунт по ID    | Admin / Manager   |
+| POST   | `/api/users/premium/mock/` | Отримати преміум акаунт  | Buyer/Seller      |
+| PATCH  | `/api/users/<pk>/block/`   | Заблокувати юзера        | Admin / Manager   |
+| PATCH  | `/api/users/<pk>/unblock/` | Розблокувати юзера       | Admin / Manager   |
+| PATCH  | `/api/users/<pk>/manager/` | Призначити менеджера     | Admin             |
 
 ### Listings
 | Метод | URL | Опис                               | Доступ |
@@ -154,23 +156,23 @@ Celery використовується для фонових задач та п
 | POST | `/api/listings/report-problem/<pk>/` | Скарга на оголошення               | Залогінений |
 | GET | `/api/listings/edit/` | Список оголошень в статусі Pending | Admin / Manager |
 | PATCH | `/api/listings/moderation/<pk>/` | Модерувати оголошення              | Admin / Manager |
+| GET | `/api/listings/statistics/<pk>/` | Статистика оголошення | Premium Seller / Manager / Admin  |
 
-### Statistics (Premium Seller / Manager / Admin)
-| Метод | URL | Опис |
-|-------|-----|------|
-| GET | `/api/listings/statistics/<pk>/` | Статистика оголошення |
+
 
 ### Cars
-| Метод             | URL | Опис                           | Доступ          |
-|-------------------|-----|--------------------------------|-----------------|
-| GET               | `/api/cars/brands/` | Список брендів                 | Публічно        |
-| GET               | `/api/cars/models/` | Список моделей                 | Публічно        |
+| Метод             | URL                             | Опис                           | Доступ          |
+|-------------------|---------------------------------|--------------------------------|-----------------|
+| GET               | `/api/cars/brands/`             | Список брендів                 | Публічно        |
+| GET               | `/api/cars/brands/<pk>/`        | Переглянути бренд              | Публічно        |
+| GET               | `/api/cars/models/`             | Список моделей                 | Публічно        |
+| GET               | `/api/cars/models/<pk>/`        | Переглянути модель             | Публічно        |
 | GET               | `/api/cars/brands/<pk>/models/` | Моделі бренду                  | Публічно        |
-| POST              | `/api/cars/request-brand/` | Запит на нову марку            | Залогінений     |
-| POST              | `/api/cars/brands/<pk>/` | Створення бренду               | Admin / Manager |
-| PATCH/DELETE | `/api/cars/brands/<pk>/` | Редагування / видалення бренду | Admin           |
-| POST              | `/api/cars/models/` | Створення моделі               | Admin / Manager |
-| PATCH/DELETE | `/api/cars/models/<pk>/` | Редагування / видалення моделі | Admin           |
+| POST              | `/api/cars/request-brand/`      | Запит на нову марку            | Залогінений     |
+| POST              | `/api/cars/brands/<pk>/`        | Створення бренду               | Admin / Manager |
+| PATCH/DELETE | `/api/cars/brands/<pk>/`        | Редагування / видалення бренду | Admin           |
+| POST              | `/api/cars/models/`             | Створення моделі               | Admin / Manager |
+| PATCH/DELETE | `/api/cars/models/<pk>/`        | Редагування / видалення моделі | Admin           |
 
 ### Payment
 | Метод | URL | Опис | Доступ |
@@ -290,11 +292,11 @@ Postman колекція з тестовими запитами знаходит
 ### Перегляд логів
 
 ```bash
-docker-compose logs -f app
+docker compose logs -f app
 ```
 
 ### Зупинка проекту
 
 ```bash
-docker-compose down
+docker compose down
 ```

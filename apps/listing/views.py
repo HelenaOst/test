@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
 
 from apps.core.permissions.permissions import HasPermissionCodename, IsImageOwner, IsOwner
 from apps.listing.filters import ListingFilter
@@ -31,17 +32,21 @@ from apps.listing.tasks import send_blocked_listing_email_task, send_report_emai
 from apps.listing_stats.models import ListingStats
 from apps.moderation.tasks import moderation_listings_task
 
-# PUBLIC VIEWS
 
+# PUBLIC VIEWS
+@extend_schema(
+    summary="Список всіх активних оголошень",
+    description="Доступно всім"
+)
 class ListingsListView(ListAPIView):
     queryset = (Listing.objects.filter(status='active')
-    .select_related(
+                .select_related(
         'owner',
         'car_model',
         'car_model__brand',
         'region',
         'exchange_rate')
-    .prefetch_related('car_images'))
+                .prefetch_related('car_images'))
     serializer_class = ListingReadSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     ordering_fields = [
@@ -60,16 +65,20 @@ class ListingsListView(ListAPIView):
         'car_model__brand__name']
 
 
+@extend_schema(
+    summary="Переглянути одне оголошення",
+    description="Дозволяє переглядати конкретне оголошення по ID. Доступно всім"
+)
 class ListingView(RetrieveAPIView):
     queryset = (Listing.objects.filter(status='active')
-    .select_related(
+                .select_related(
         'owner',
         'car_model',
         'car_model__brand',
         'region',
         'exchange_rate'
     )
-    .prefetch_related('car_images'))
+                .prefetch_related('car_images'))
     serializer_class = ListingReadSerializer
 
     def retrieve(self, request, *args, **kwargs):
@@ -83,12 +92,20 @@ class ListingView(RetrieveAPIView):
         return Response(serializer.data)
 
 
+@extend_schema(
+    summary="Список регіонів",
+    description="Доступно для всіх користувачів"
+)
 class RegionsListView(ListAPIView):
     queryset = Region.objects.all()
     serializer_class = RegionSerializer
 
 
 # SELLER VIEWS
+@extend_schema(
+    summary="Список власних оголошень",
+    description="Доступно лише для власників"
+)
 class MyListingsListView(ListAPIView):
     serializer_class = ListingReadSerializer
     permission_classes = [HasPermissionCodename]
@@ -111,7 +128,6 @@ class MyListingsListView(ListAPIView):
 
     ordering = ["-created_at"]
 
-
     def get_queryset(self):
         return (
             Listing.objects.filter(owner=self.request.user)
@@ -126,6 +142,10 @@ class MyListingsListView(ListAPIView):
         )
 
 
+@extend_schema(
+    summary="Створити оголошення",
+    description="Доступно для продавців і покупців. Покупці в момент створення оголошення змінюють роль і стають продавцями"
+)
 class ListingCreateView(CreateAPIView):
     queryset = Listing.objects.all()
     serializer_class = ListingWriteSerializer
@@ -138,11 +158,16 @@ class ListingCreateView(CreateAPIView):
         update_one_listing_prices_task.delay(listing.id)
 
 
+@extend_schema(
+    summary="Оновити власне оголошення",
+    description="Дозволяє вносити правки у власне оголошення"
+)
 class ListingUpdateView(UpdateAPIView):
     queryset = Listing.objects.filter(status__in=['active', 'rejected'])
     serializer_class = ListingWriteSerializer
     permission_classes = [HasPermissionCodename, IsOwner]
     required_permission = 'can_update_own_listing'
+    http_method_names = ['patch']
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -175,6 +200,10 @@ class ListingUpdateView(UpdateAPIView):
         )
 
 
+@extend_schema(
+    summary="Видалити власне оголошення",
+    description="Дозволяє видаляти власне оголошення"
+)
 class ListingDeleteView(DestroyAPIView):
     queryset = Listing.objects.filter(status__in=['active', 'rejected', 'pending'])
     serializer_class = ListingWriteSerializer
@@ -192,6 +221,10 @@ class ListingDeleteView(DestroyAPIView):
         )
 
 
+@extend_schema(
+    summary="Завантаження фото",
+    description="Дозволяє завантажити одне або кілька фото у власне оголошення"
+)
 class ImagesUploadView(CreateAPIView):
     queryset = Listing.objects.all()
     serializer_class = ImageUploadSerializer
@@ -222,6 +255,10 @@ class ImagesUploadView(CreateAPIView):
         )
 
 
+@extend_schema(
+    summary="Видалити фото",
+    description="Дозволяє видалити фото по ID з власного оголошення. Треба вказати ID фотографії"
+)
 class ImageDeleteView(DestroyAPIView):
     queryset = CarImage.objects.all()
     serializer_class = ImageSerializer
@@ -238,26 +275,36 @@ class ImageDeleteView(DestroyAPIView):
 
 
 # MANAGER VIEWS
+@extend_schema(
+    summary="Список оголошень для модерації",
+    description="Дозволяє переглянути список оголошень зі статусом pending для їх модерації. Доступно менеджерам і адміністраторам"
+)
 class PendingListingsListView(ListAPIView):
     queryset = (Listing.objects.filter(status='pending')
-    .select_related(
+                .select_related(
         'owner',
         'car_model',
         'car_model__brand',
         'region',
         'exchange_rate'
     )
-    .prefetch_related('car_images'))
+                .prefetch_related('car_images'))
     serializer_class = ListingReadSerializer
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_edit_listings'
 
 
+@extend_schema(
+    summary="Модерація оголошення",
+    description="Модерація оголошення менеджером або адміністратором. Оголошення отримує статус active, якщо проходе первірку, rejected - відхилено, "
+                "blocked - якщо заблоковане"
+)
 class ModeratingListingView(UpdateAPIView):
     queryset = Listing.objects.filter(status='pending')
     serializer_class = ListingModerationSerializer
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_moderate_listings'
+    http_method_names = ['patch']
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -272,6 +319,10 @@ class ModeratingListingView(UpdateAPIView):
         )
 
 
+@extend_schema(
+    summary="Повідомити про проблему",
+    description="Відправка email адміністрації з повідомленням про проблему з оголошенням по ID чи продавцем. Доступно залогіненим користувачам"
+)
 class ReportAboutProblemView(GenericAPIView):
     serializer_class = SendReportSerializer
     permission_classes = [IsAuthenticated]

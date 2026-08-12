@@ -10,4 +10,10 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend',
         # ...
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'AutoRia Clone API',
+    'DESCRIPTION': 'REST API платформи для продажу автомобілів',
+    'VERSION': '1.0.0',
 }

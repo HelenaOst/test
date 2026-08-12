@@ -242,7 +242,7 @@
 					"response": []
 				},
 				{
-					"name": "update my account",
+					"name": "get user by id (admin/manager)",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -254,28 +254,24 @@
 								}
 							]
 						},
-						"method": "PATCH",
+						"method": "GET",
 						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"profile\": {\n        \"name\": \"Izzi\",\n        \"description\": \"I am not SUPERUSER\"\n}\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
 						"url": {
-							"raw": "{{host}}/api/users/me/update/",
+							"raw": "{{host}}/api/users/:pk/",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
 								"api",
 								"users",
-								"me",
-								"update",
+								":pk",
 								""
+							],
+							"variable": [
+								{
+									"key": "pk",
+									"value": "1"
+								}
 							]
 						}
 					},
@@ -313,83 +309,6 @@
 					"response": []
 				},
 				{
-					"name": "upgrade to premium",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{host}}/api/users/me/premium/mock/",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"api",
-								"users",
-								"me",
-								"premium",
-								"mock",
-								""
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "get user by id (admin/manager)",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{host}}/api/users/:pk/",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"api",
-								"users",
-								":pk",
-								""
-							],
-							"variable": [
-								{
-									"key": "pk",
-									"value": "1"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "delete user by id (admin/manager)",
 					"request": {
 						"auth": {
@@ -421,6 +340,46 @@
 									"key": "pk",
 									"value": "5"
 								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update my account",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"profile\": {\n        \"name\": \"Izzi\",\n        \"description\": \"I am not SUPERUSER\"\n}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/api/users/me/update/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me",
+								"update",
+								""
 							]
 						}
 					},
@@ -536,6 +495,47 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "upgrade to premium",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/api/users/me/premium/mock/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me",
+								"premium",
+								"mock",
+								""
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -637,7 +637,7 @@
 						{
 							"name": "update brand (admin)",
 							"request": {
-								"method": "PUT",
+								"method": "PATCH",
 								"header": [],
 								"body": {
 									"mode": "raw",
@@ -1254,7 +1254,7 @@
 								}
 							]
 						},
-						"method": "PUT",
+						"method": "PATCH",
 						"header": [],
 						"body": {
 							"mode": "urlencoded",

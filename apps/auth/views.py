@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from drf_spectacular.utils import extend_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.auth.serializers import RegisterSerializer
@@ -32,7 +33,6 @@ class RegisterView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
-
 
 class LogOutView(APIView):
     def post(self, request):

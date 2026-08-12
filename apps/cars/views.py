@@ -10,13 +10,25 @@ from rest_framework.generics import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from drf_spectacular.utils import extend_schema, extend_schema_view
+
 from apps.cars.models import Brand, CarModel
 from apps.cars.serializers import BrandSerializer, CarModelReadSerializer, CarModelWriteSerializer, SendEmailSerializer
 from apps.cars.tasks import send_offer_new_carmodel_task
 from apps.core.permissions.permissions import HasPermissionCodenameOrReadOnly
 
-# Create your views here.
 
+# Create your views here.
+@extend_schema_view(
+    get=extend_schema(
+        summary="Список моделей авто",
+        description="Доступно всім користувачам"
+    ),
+    post=extend_schema(
+        summary="Додати нову модель авто",
+        description="Доступно менеджерам і адміністраторам",
+    )
+)
 class CarModelListCreateView(ListCreateAPIView):
     queryset = CarModel.objects.select_related("brand")
     permission_classes = [HasPermissionCodenameOrReadOnly]
@@ -36,10 +48,25 @@ class CarModelListCreateView(ListCreateAPIView):
         return CarModelWriteSerializer
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Отримати інформацію про модель авто",
+        description="Доступно всім користувачам"
+    ),
+    delete=extend_schema(
+        summary="Видалити модель авто",
+        description="Видаляє модель авто по ID, дозволено лише адміністратору"
+    ),
+    patch=extend_schema(
+        summary="Оновити інформацію про модель авто",
+        description="Оновлення/виправлення інформації про модель авто по ID, дозволено лише адміністратору"
+    )
+)
 class CarModelDetailView(RetrieveUpdateDestroyAPIView):
     queryset = CarModel.objects.select_related("brand")
     permission_classes = [HasPermissionCodenameOrReadOnly]
     required_permission = 'can_update_delete_car_models'
+    http_method_names = ['get', 'patch', 'delete']
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -55,7 +82,16 @@ class CarModelDetailView(RetrieveUpdateDestroyAPIView):
             status=status.HTTP_200_OK
         )
 
-
+@extend_schema_view(
+    get=extend_schema(
+        summary="Список брендів",
+        description="Доступно всім користувачам"
+    ),
+    post=extend_schema(
+        summary="Додати новий бренд",
+        description="Доступно менеджерам і адміністраторам",
+    )
+)
 class BrandListCreateView(ListCreateAPIView):
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
@@ -67,12 +103,26 @@ class BrandListCreateView(ListCreateAPIView):
     ordering_fields = ["name"]
     ordering = ["name"]
 
-
+@extend_schema_view(
+    get=extend_schema(
+        summary="Отримати інформацію про бренд",
+        description="Доступно всім користувачам"
+    ),
+    delete=extend_schema(
+        summary="Видалити бренд",
+        description="Видаляє бренд по ID, дозволено лише адміністратору"
+    ),
+    patch=extend_schema(
+        summary="Оновити інформацію про бренд",
+        description="Оновлення/виправлення інформації про бренд по ID, дозволено лише адміністратору"
+    )
+)
 class BrandDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
     permission_classes = [HasPermissionCodenameOrReadOnly]
     required_permission = 'can_update_delete_brands'
+    http_method_names = ['get', 'patch', 'delete']
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -82,7 +132,10 @@ class BrandDetailView(RetrieveUpdateDestroyAPIView):
             status=status.HTTP_200_OK
         )
 
-
+@extend_schema(
+    summary="Отримати список автомобілів конкретного бренду",
+    description="Доступно всім користувачам"
+)
 class CarModelByBrandView(ListAPIView):
     serializer_class = CarModelReadSerializer
 
@@ -95,7 +148,10 @@ class CarModelByBrandView(ListAPIView):
             .select_related("brand")
         )
 
-
+@extend_schema(
+    summary="Відправити запит на додавання нового бренду чи моделі",
+    description="Відправка email адміністрації, доступно залогіненим користувачам"
+)
 class OfferNewCarModelView(GenericAPIView):
     serializer_class = SendEmailSerializer
     permission_classes = [IsAuthenticated]

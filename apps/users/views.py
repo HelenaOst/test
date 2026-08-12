@@ -7,6 +7,8 @@ from rest_framework import generics, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
 
+from drf_spectacular.utils import extend_schema
+
 from apps.core.permissions.permissions import HasPermissionCodename
 from apps.users.models import Profile, Role
 from apps.users.serializers import ProfileUpgradeSerializer, UserProfileUpdateSerializer, UserReadSerializer
@@ -14,6 +16,10 @@ from apps.users.serializers import ProfileUpgradeSerializer, UserProfileUpdateSe
 UserModel = get_user_model()
 
 
+@extend_schema(
+    summary="Отримати список користувачів",
+    description="Адміністратор має повний доступ до всіх користувачів. Менеджер бачить лише покупців і продавців",
+)
 class UserListView(generics.ListAPIView):
     serializer_class = UserReadSerializer
     permission_classes = [HasPermissionCodename]
@@ -26,6 +32,10 @@ class UserListView(generics.ListAPIView):
         return qs
 
 
+@extend_schema(
+    summary="Отримати акаунт користувача",
+    description="Дає можливість подивитись дані конкретного корситувача по ID. Адміністратор має повний доступ до всіх користувачів. Менеджер бачить лише покупців і продавців",
+)
 class UserDetailView(generics.RetrieveAPIView):
     serializer_class = UserReadSerializer
     permission_classes = [HasPermissionCodename]
@@ -38,6 +48,10 @@ class UserDetailView(generics.RetrieveAPIView):
         return qs
 
 
+@extend_schema(
+    summary="Видалити користувача",
+    description="Видалення користувача по ID. Доступно для менеджерів і адміністраторів"
+)
 class UserDeleteView(generics.DestroyAPIView):
     queryset = UserModel.objects.select_related('profile', 'role').filter(deleted_at__isnull=True)
     serializer_class = UserProfileUpdateSerializer
@@ -73,6 +87,10 @@ class UserDeleteView(generics.DestroyAPIView):
         )
 
 
+@extend_schema(
+    summary="Отримати власний акаунт",
+    description="Доступно лише власнику акаунта"
+)
 class UserMeView(generics.RetrieveAPIView):
     permission_classes = [HasPermissionCodename]
     serializer_class = UserReadSerializer
@@ -82,14 +100,20 @@ class UserMeView(generics.RetrieveAPIView):
         return self.request.user
 
 
+@extend_schema(
+    summary="Оновити власний акаунт",
+    description="Доступно лише власнику акаунта"
+)
 class UserMeUpdateView(generics.UpdateAPIView):
     permission_classes = [HasPermissionCodename]
     serializer_class = UserProfileUpdateSerializer
     required_permission = 'can_update_own_account'
+    http_method_names = ['patch']
 
     def get_object(self):
         return self.request.user
-#створюємо профіль для адміна(суперюзера)
+
+    # створюємо профіль для адміна(суперюзера)
     def perform_update(self, serializer):
         user = self.request.user
         profile = getattr(user, 'profile', None)
@@ -100,6 +124,10 @@ class UserMeUpdateView(generics.UpdateAPIView):
         serializer.save()
 
 
+@extend_schema(
+    summary="Видалити власний акаунт",
+    description="Доступно лише власнику акаунта"
+)
 class UserMeDeleteView(generics.DestroyAPIView):
     permission_classes = [HasPermissionCodename]
     serializer_class = UserProfileUpdateSerializer
@@ -124,6 +152,10 @@ class UserMeDeleteView(generics.DestroyAPIView):
         )
 
 
+@extend_schema(
+    summary="Заблокувати користувача",
+    description="Блокування акаунту по ID. Доступно менеджерам і адміністраторам"
+)
 class UserBlockView(GenericAPIView):
     queryset = UserModel.objects.select_related('profile', 'role').all()
     permission_classes = [HasPermissionCodename]
@@ -176,6 +208,10 @@ class UserBlockView(GenericAPIView):
         )
 
 
+@extend_schema(
+    summary="Розблокувати користувача",
+    description="Розблокування акаунту по ID. Доступно менеджерам і адміністраторам"
+)
 class UserUnblockView(generics.GenericAPIView):
     queryset = UserModel.objects.select_related('profile', 'role').all()
     permission_classes = [HasPermissionCodename]
@@ -222,6 +258,10 @@ class UserUnblockView(generics.GenericAPIView):
         )
 
 
+@extend_schema(
+    summary="Створити менеджера",
+    description="Перетворює зареєстрованого юзера в менеджера по ID. Доступно лише адміністраторам"
+)
 class UserToManagerView(GenericAPIView):
     queryset = UserModel.objects.select_related('profile', 'role').all()
     permission_classes = [HasPermissionCodename]
@@ -242,6 +282,10 @@ class UserToManagerView(GenericAPIView):
                         status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    summary="Надати преміум акаунту",
+    description="Функціонал оплати реалізований як заглушка — без реальної платіжної системи. При натисканні преміум активується одразу без оплати на 30 днів. У реальному проекті цей ендпоінт замінюється на інтеграцію з платіжним сервісом"
+)
 class UserToPremiumView(GenericAPIView):
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_be_premium_user'
