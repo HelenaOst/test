@@ -51,11 +51,52 @@ EMAIL_PORT=2525
 MANAGERS_EMAIL=moderation@automarket.com
 ```
 
+
+
 ### 3. Запустити Docker
 
 ```bash
 docker compose up -d --build
 ```
+
+Після запуску переконайтеся, що всі контейнери працюють:
+
+```bash
+docker compose ps
+```
+### База даних
+
+У проекті використовується **локальний volume** `./mysql:/var/lib/mysql`, тому всі дані зберігаються у папці `mysql` в корені проекту.
+**Важливо:** Папка `mysql/` додана в `.gitignore` і не повинна потрапляти в репозиторій.
+
+### Якщо потрібно очистити дані БД
+
+```bash
+# Зупинити контейнери
+docker compose down
+
+# Видалити папку з даними
+rm -rf ./mysql
+
+# Запустити заново
+docker compose up -d --build
+```
+
+## Порти
+
+| Сервіс | Внутрішній порт | Зовнішній порт | Опис |
+|--------|-----------------|----------------|------|
+| app    | 8000            | 8000           | Django сервер |
+| db     | 3306            | 3307           | MySQL |
+| web    | 80              | 80             | Nginx для статики |
+| redis  | 6379            | -              | Redis (не доступний ззовні) |
+
+Після запуску переконайтеся, що всі контейнери працюють:
+
+```bash
+docker compose ps
+```
+Якщо порти зайняті, зупиніть інші Docker проекти або змініть порти у `.env` та `docker-compose.yml`.
 
 ### 4. Застосувати міграції
 
@@ -69,9 +110,9 @@ docker exec -it python_test-app-1 python manage.py migrate
 ### 5. Завантажити фікстури (fixtures)
 
 ```bash
-docker exec -it python_test-app-1 python manage.py loaddata regions.json
-docker exec -it python_test-app-1 python manage.py loaddata brands.json
-docker exec -it python_test-app-1 python manage.py loaddata car_models.json
+docker compose exec app python manage.py loaddata regions.json
+docker compose exec app python manage.py loaddata brands.json
+docker compose exec app python manage.py loaddata car_models.json
 ```
 
 ### Опціонально: фікстури з оголошеннями
@@ -83,10 +124,16 @@ docker exec -it python_test-app-1 python manage.py loaddata car_models.json
 2. Зареєструвати через API двох продавців. Вони повинні мати ID `2` і `3`, оскільки `listings.json` містить посилання на цих користувачів.
 
 ```bash
-docker exec -it python_test-app-1 python manage.py createsuperuser
-docker exec -it python_test-app-1 python manage.py loaddata listings.json
+docker compose exec app python manage.py createsuperuser
+docker compose exec app python manage.py loaddata listings.json
 ```
 ### Тепер можна реєструвати інших юзерів на тести через API
+
+## API Документація
+
+Після запуску проекту документація доступна за адресами:
+- Swagger UI: `http://localhost:8000/api/docs/`
+- ReDoc: `http://localhost:8000/api/redoc/`
 
 ## Архітектура
 
