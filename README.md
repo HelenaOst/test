@@ -1,6 +1,4 @@
 # AutoRia Clone — Car Marketplace API
-Навчальний/тестовий REST API для платформи продажу автомобілів.
-
 REST API платформи для продажу автомобілів, побудований на Django REST Framework.
 
 ---
@@ -79,8 +77,7 @@ docker exec -it python_test-app-1 python manage.py loaddata car_models.json
 
 Перед завантаженням необхідно:
 1. Створити суперюзера через `createsuperuser`.
-2. Зареєструвати через API двох продавців.
-3. Вони повинні мати ID `2` і `3`, оскільки `listings.json` містить посилання на цих користувачів.
+2. Зареєструвати через API двох продавців. Вони повинні мати ID `2` і `3`, оскільки `listings.json` містить посилання на цих користувачів.
 
 ```bash
 docker exec -it python_test-app-1 python manage.py createsuperuser
@@ -92,7 +89,7 @@ docker exec -it python_test-app-1 python manage.py loaddata listings.json
 
 Проєкт розділений на Django apps відповідно до доменів:
 
-- `users` — користувачі, ролі, permissions, профілі
+- `users` — користувачі, ролі, дозволи (permissions), профілі
 - `listing` — оголошення та їхня модерація
 - `cars` — бренди та моделі автомобілів
 - `listing_stats` — статистика оголошень
@@ -114,16 +111,21 @@ Celery використовується для фонових задач та п
 > Базовий акаунт — одне активне оголошення. Преміум — необмежено.
 
 ---
+## Преміум акаунт
+
+Функціонал оплати реалізований як **заглушка** — без реальної платіжної системи.
+При натисканні на `POST /api/users/profile/upgrade/` преміум активується одразу
+без оплати на 30 днів. У реальному проекті цей ендпоінт замінюється на інтеграцію з платіжним сервісом.
 
 ## Основні ендпоінти
 
 ### Auth
-| Метод | URL | Опис             |
-|-------|-----|------------------|
-| POST | `/api/auth/register/` | Реєстрація       |
-| POST | `/api/auth/login/` | Логін            |
+| Метод | URL | Опис            |
+|-------|-----|-----------------|
+| POST | `/api/auth/register/` | Реєстрація      |
+| POST | `/api/auth/login/` | Логін           |
 | POST | `/api/auth/refresh/` | Оновлення токену |
-| POST | `/api/auth/logout/` | Вихід з аккаунта |
+| POST | `/api/auth/logout/` | Вихід з акаунта |
 
 ### Users
 | Метод | URL | Опис | Доступ          |
@@ -138,20 +140,20 @@ Celery використовується для фонових задач та п
 | PATCH | `/api/users/<pk>/manager/` | Призначити менеджера | Admin       |
 
 ### Listings
-| Метод | URL | Опис                         | Доступ |
-|-------|-----|------------------------------|--------|
-| GET | `/api/listings/` | Всі активні оголошення       | Публічно |
-| GET | `/api/listings/<pk>/` | Одне оголошення              | Публічно |
-| GET | `/api/listings/regions/` | Список регіонів              | Публічно |
-| GET | `/api/listings/my/` | Мої оголошення               | Seller |
-| POST | `/api/listings/create/` | Створити оголошення          | Buyer/Seller |
-| PATCH | `/api/listings/update/<pk>/` | Редагувати оголошення        | Seller (власник) |
-| DELETE | `/api/listings/delete/<pk>/` | Зняти з продажу              | Seller (власник) |
-| POST | `/api/listings/<pk>/photos/` | Завантажити фото             | Seller (власник) |
-| DELETE | `/api/listings/photos/<pk>/` | Видалити фото                | Seller (власник) |
-| POST | `/api/listings/report-problem/<pk>/` | Скарга на оголошення         | Залогінений |
-| GET | `/api/listings/edit/` | Оголошення в статусі Pending | Admin / Manager |
-| PATCH | `/api/listings/moderation/<pk>/` | Модерувати оголошення        | Admin / Manager |
+| Метод | URL | Опис                               | Доступ |
+|-------|-----|------------------------------------|--------|
+| GET | `/api/listings/` | Всі активні оголошення             | Публічно |
+| GET | `/api/listings/<pk>/` | Одне оголошення                    | Публічно |
+| GET | `/api/listings/regions/` | Список регіонів                    | Публічно |
+| GET | `/api/listings/my/` | Мої оголошення                     | Seller |
+| POST | `/api/listings/create/` | Створити оголошення                | Buyer/Seller |
+| PATCH | `/api/listings/update/<pk>/` | Редагувати оголошення              | Seller (власник) |
+| DELETE | `/api/listings/delete/<pk>/` | Зняти з продажу                    | Seller (власник) |
+| POST | `/api/listings/<pk>/photos/` | Завантажити фото                   | Seller (власник) |
+| DELETE | `/api/listings/photos/<pk>/` | Видалити фото                      | Seller (власник) |
+| POST | `/api/listings/report-problem/<pk>/` | Скарга на оголошення               | Залогінений |
+| GET | `/api/listings/edit/` | Список оголошень в статусі Pending | Admin / Manager |
+| PATCH | `/api/listings/moderation/<pk>/` | Модерувати оголошення              | Admin / Manager |
 
 ### Statistics (Premium Seller / Manager / Admin)
 | Метод | URL | Опис |
@@ -208,20 +210,59 @@ Celery використовується для фонових задач та п
 
 ## Email сповіщення
 
-Проект використовує **Mailtrap** для тестування email.
-
-Для перегляду тестових листів необхідно створити безкоштовний акаунт у Mailtrap та взяти SMTP credentials із відповідного Email Sandbox.
+Проект використовує **Mailtrap** для тестування email — всі листи перехоплюються
+і відображаються у веб-інтерфейсі Mailtrap, не потрапляючи на реальні поштові скриньки.
 
 Листи відправляються:
 - Менеджеру при блокуванні оголошення після 3 невдалих спроб модерації
 - Менеджеру при скарзі на оголошення
 - Менеджеру при запиті на нову марку авто
+
+### Налаштування Mailtrap
+1. Зареєструйся на [mailtrap.io](https://mailtrap.io)
+2. Перейди у `Email Testing` → `Sandboxes` → `My Sandbox` → вкладка `SMTP`
+3. Скопіюй credentials у `.env`:
+Для перегляду тестових листів необхідно створити безкоштовний акаунт у Mailtrap та взяти SMTP credentials із відповідного Email Sandbox.
+
 ```
 EMAIL_HOST=sandbox.smtp.mailtrap.io
 EMAIL_HOST_USER=your_mailtrap_user
 EMAIL_HOST_PASSWORD=your_mailtrap_password
 EMAIL_PORT=2525
 ```
+## Додавання нових (roles) і дозволів (permissions)
+
+Ролі та дозволи є частиною архітектури системи і змінюються через міграції,
+а не через UI — це свідоме рішення для безпеки.
+
+### Щоб додати новий пермішин:
+
+1. Створи нову порожню міграцію:
+```bash
+python manage.py makemigrations users --empty --name add_new_permission
+```
+
+2. Заповни її за зразком існуючої `0002_seed_roles_and_permissions.py`:
+```python
+def add_permission(apps, schema_editor):
+    CustomPermission = apps.get_model('users', 'CustomPermission')
+    RolePermissions = apps.get_model('users', 'RolePermissions')
+    Role = apps.get_model('users', 'Role')
+
+    perm = CustomPermission.objects.create(
+        name='Назва пермішину',
+        codename='codename_permission'
+    )
+    role = Role.objects.get(name='seller')
+    RolePermissions.objects.create(role=role, permission=perm)
+```
+
+3. Застосуй міграцію:
+```bash
+docker exec -it python_test-app-1 python manage.py migrate
+```
+
+### Щоб додати нову роль — той самий підхід через міграцію.
 
 ---
 
