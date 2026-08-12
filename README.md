@@ -63,7 +63,7 @@ docker-compose up -d --build
 docker exec -it python_test-app-1 python manage.py migrate
 ```
 
-### 5. Завантажити фікстури
+### 5. Завантажити фікстури (fixtures)
 
 ```bash
 docker exec -it python_test-app-1 python manage.py loaddata regions.json
@@ -71,7 +71,7 @@ docker exec -it python_test-app-1 python manage.py loaddata brands.json
 docker exec -it python_test-app-1 python manage.py loaddata car_models.json
 ```
 
-### Опціонально: fixtures з оголошеннями
+### Опціонально: фікстури з оголошеннями
 
 Для швидкого тестування можна завантажити `listings.json`.
 
@@ -219,10 +219,12 @@ Celery використовується для фонових задач та п
 - Менеджеру при запиті на нову марку авто
 
 ### Налаштування Mailtrap
+
+Для перегляду тестових листів необхідно створити безкоштовний акаунт у Mailtrap та взяти SMTP credentials із відповідного Email Sandbox.
+
 1. Зареєструйся на [mailtrap.io](https://mailtrap.io)
 2. Перейди у `Email Testing` → `Sandboxes` → `My Sandbox` → вкладка `SMTP`
-3. Скопіюй credentials у `.env`:
-Для перегляду тестових листів необхідно створити безкоштовний акаунт у Mailtrap та взяти SMTP credentials із відповідного Email Sandbox.
+3. Перевір, чи описані credentials у `.env`:
 
 ```
 EMAIL_HOST=sandbox.smtp.mailtrap.io
@@ -230,7 +232,7 @@ EMAIL_HOST_USER=your_mailtrap_user
 EMAIL_HOST_PASSWORD=your_mailtrap_password
 EMAIL_PORT=2525
 ```
-## Додавання нових (roles) і дозволів (permissions)
+## Додавання нових ролей (roles) і дозволів (permissions)
 
 Ролі та дозволи є частиною архітектури системи і змінюються через міграції,
 а не через UI — це свідоме рішення для безпеки.
@@ -267,10 +269,22 @@ docker exec -it python_test-app-1 python manage.py migrate
 ---
 
 ## Тестування
-
-Postman колекція з усіма замоканими запитами знаходиться у файлі `AutoRia Clone API.postman_collection.json`.
+Postman колекція з тестовими запитами знаходиться у файлі `postman/AutoRia Clone API.postman_collection.json`.
 
 Імпортуй в Postman і встанови змінну `host = http://localhost:8888`.
+
+Імпортуй `AutoRia Clone API.postman_collection.json` у Postman.
+
+Перед запуском запитів створи Environment з такими змінними:
+
+| Variable | Initial value |
+|---|---|
+| `host` | `http://localhost:8888` |
+| `access` | |
+| `refresh` | |
+
+Після виконання `login` access та refresh tokens
+автоматично зберігаються в Environment.
 
 
 ### Перегляд логів
