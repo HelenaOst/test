@@ -17,8 +17,8 @@ from apps.cars.serializers import BrandSerializer, CarModelReadSerializer, CarMo
 from apps.cars.tasks import send_offer_new_carmodel_task
 from apps.core.permissions.permissions import HasPermissionCodenameOrReadOnly
 
+# ===================== МОДЕЛІ АВТОМОБІЛІВ =====================
 
-# Create your views here.
 @extend_schema_view(
     get=extend_schema(
         summary="Список моделей авто",
@@ -30,19 +30,19 @@ from apps.core.permissions.permissions import HasPermissionCodenameOrReadOnly
     )
 )
 class CarModelListCreateView(ListCreateAPIView):
+    """Список та створення моделей автомобілів."""
+
     queryset = CarModel.objects.select_related("brand")
     permission_classes = [HasPermissionCodenameOrReadOnly]
     required_permission = 'can_add_car_models'
 
     filter_backends = [OrderingFilter, SearchFilter]
-    search_fields = [
-        "name",
-        "brand__name",
-    ]
+    search_fields = ["name", "brand__name"]
     ordering_fields = ["name"]
     ordering = ["name"]
 
     def get_serializer_class(self):
+        # Для читання - з вкладеним брендом, для запису - тільки ID
         if self.request.method == 'GET':
             return CarModelReadSerializer
         return CarModelWriteSerializer
@@ -63,6 +63,8 @@ class CarModelListCreateView(ListCreateAPIView):
     )
 )
 class CarModelDetailView(RetrieveUpdateDestroyAPIView):
+    """Детальний перегляд, оновлення та видалення моделі авто."""
+
     queryset = CarModel.objects.select_related("brand")
     permission_classes = [HasPermissionCodenameOrReadOnly]
     required_permission = 'can_update_delete_car_models'
@@ -76,11 +78,13 @@ class CarModelDetailView(RetrieveUpdateDestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
-
         return Response(
             {'message': 'CarModel has been deleted.'},
             status=status.HTTP_200_OK
         )
+
+
+# ===================== БРЕНДИ АВТОМОБІЛІВ =====================
 
 @extend_schema_view(
     get=extend_schema(
@@ -93,6 +97,8 @@ class CarModelDetailView(RetrieveUpdateDestroyAPIView):
     )
 )
 class BrandListCreateView(ListCreateAPIView):
+    """Список та створення брендів автомобілів."""
+
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
     permission_classes = [HasPermissionCodenameOrReadOnly]
@@ -102,6 +108,7 @@ class BrandListCreateView(ListCreateAPIView):
     search_fields = ["name"]
     ordering_fields = ["name"]
     ordering = ["name"]
+
 
 @extend_schema_view(
     get=extend_schema(
@@ -118,6 +125,8 @@ class BrandListCreateView(ListCreateAPIView):
     )
 )
 class BrandDetailView(RetrieveUpdateDestroyAPIView):
+    """Детальний перегляд, оновлення та видалення бренду."""
+
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
     permission_classes = [HasPermissionCodenameOrReadOnly]
@@ -132,27 +141,35 @@ class BrandDetailView(RetrieveUpdateDestroyAPIView):
             status=status.HTTP_200_OK
         )
 
+
+# ===================== ДОДАТКОВІ ЕНДПОІНТИ =====================
+
 @extend_schema(
     summary="Отримати список автомобілів конкретного бренду",
     description="Доступно всім користувачам"
 )
 class CarModelByBrandView(ListAPIView):
+    """Список моделей за ID бренду."""
+
     serializer_class = CarModelReadSerializer
 
     def get_queryset(self):
+        # Перевіряємо, чи існує бренд
         get_object_or_404(Brand, pk=self.kwargs["pk"])
-
         return (
             CarModel.objects
             .filter(brand_id=self.kwargs["pk"])
             .select_related("brand")
         )
 
+
 @extend_schema(
     summary="Відправити запит на додавання нового бренду чи моделі",
     description="Відправка email адміністрації, доступно залогіненим користувачам"
 )
 class OfferNewCarModelView(GenericAPIView):
+    """Відправка пропозиції щодо нової моделі або бренду."""
+
     serializer_class = SendEmailSerializer
     permission_classes = [IsAuthenticated]
 
@@ -163,5 +180,4 @@ class OfferNewCarModelView(GenericAPIView):
         return Response(
             {'message': 'Your request has been sent.'},
             status=status.HTTP_200_OK
-
         )

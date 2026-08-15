@@ -9,12 +9,13 @@ from apps.listing_stats.serializers import ListingStatsSerializer
 from apps.listing_stats.services import ListingStatsService
 
 
-# Create your views here.
 @extend_schema(
     summary="Переглянути статистику",
     description="Дозволяє преміум-користувачам отримувати статистику по власним оголошенням. Інформація доступна менеджерам і адміністраторам"
 )
 class ListingStatsView(RetrieveAPIView):
+    """Статистика оголошення: перегляди та порівняння цін."""
+
     queryset = Listing.objects.all()
     serializer_class = ListingStatsSerializer
     permission_classes = [HasPermissionCodename, IsOwner]

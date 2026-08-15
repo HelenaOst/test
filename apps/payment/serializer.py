@@ -4,6 +4,8 @@ from apps.payment.models import CurrencyRate
 
 
 class CurrencyRateSerializer(serializers.ModelSerializer):
+    """Серіалізатор для курсів валют."""
+
     class Meta:
         model = CurrencyRate
         fields = (
