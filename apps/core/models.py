@@ -1,8 +1,9 @@
 from django.db import models
 
 
-# Create your models here.
 class BaseModel(models.Model):
+    """Абстрактна базова модель з автоматичними полями дати створення та оновлення."""
+
     class Meta:
         abstract = True
 

@@ -3,13 +3,17 @@ from rest_framework.response import Response
 
 
 class PagePagination(PageNumberPagination):
+    """Кастомна пагінація з розширеною мета-інформацією."""
+
     page_size = 10
     max_page_size = 100
     page_size_query_param = 'page_size'
 
-    # ctrl o => get_paginated_response
-
     def get_paginated_response(self, data):
+        """
+        Перевизначає стандартну відповідь пагінації.
+        Додає загальну кількість, кількість сторінок та посилання.
+        """
         return Response({
             'total_items': self.page.paginator.count,
             'total_pages': self.page.paginator.num_pages,
@@ -17,4 +21,3 @@ class PagePagination(PageNumberPagination):
             'next': bool(self.get_next_link()),
             'data': data
         })
-
