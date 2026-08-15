@@ -6,8 +6,16 @@ from apps.payment.models import CurrencyRate
 
 
 class ExchangeRateService:
+    """Сервіс для роботи з курсами валют (PrivatBank API)."""
+
     @staticmethod
     def fetch_currency_rates():
+        """
+        Отримує актуальні курси USD та EUR з PrivatBank API.
+        Зберігає їх у БД з датою сьогодні.
+
+        """
+
         response = requests.get('https://api.privatbank.ua/p24api/pubinfo?exchange&coursid=5')
         if response.status_code == 200:
             data = response.json()
@@ -15,12 +23,14 @@ class ExchangeRateService:
             usd_rate = None
             euro_rate = None
 
+            # Парсинг курсів з відповіді API
             for currency in data:
                 if currency['ccy'] == 'USD':
                     usd_rate = currency['sale']
                 if currency['ccy'] == 'EUR':
                     euro_rate = currency['sale']
 
+            # Збереження курсів у БД (оновлення або створення)
             today = timezone.now().date()
 
             CurrencyRate.objects.update_or_create(
