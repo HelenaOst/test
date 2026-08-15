@@ -16,18 +16,19 @@ from apps.listing.views import (
 )
 
 urlpatterns = [
-    #Public
+    # Ендпоінти доступу до оголошень
+    # Public
     path('', ListingsListView.as_view(), name='listing-list'),
     path('<int:pk>/', ListingView.as_view(), name='listing-detail'),
     path('regions/', RegionsListView.as_view(), name='region-list'),
-    #Seller
+    # Seller
     path('my/', MyListingsListView.as_view(), name='my-listing-list'),
     path('create/', ListingCreateView.as_view(), name='listing-create'),
     path('update/<int:pk>/', ListingUpdateView.as_view(), name='listing-update'),
     path('delete/<int:pk>/', ListingDeleteView.as_view(), name='listing-delete'),
     path('<int:pk>/photos/', ImagesUploadView.as_view(), name='upload-photos'),
     path('photos/<int:pk>/', ImageDeleteView.as_view(), name='delete-photos'),
-    #Manager
+    # Manager
     path('edit/', PendingListingsListView.as_view(), name='edit-listings'),
     path('moderation/<int:pk>/', ModeratingListingView.as_view(), name='moderation-listing'),
     path('report-problem/<int:pk>/', ReportAboutProblemView.as_view(), name='report-about-problem'),

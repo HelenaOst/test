@@ -1,16 +1,25 @@
-# Create your views here.
-from rest_framework import status
+"""
+Views для ендпоінтів автентифікації.
+Обробляє реєстрацію, вхід, вихід та оновлення токенів.
+"""
+from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from drf_spectacular.utils import extend_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.auth.serializers import RegisterSerializer
 
 
-# Create your views here.
 class RegisterView(APIView):
+    """
+        View для реєстрації нового користувача.
+
+        Створює обліковий запис з email, паролем, телефоном та роллю.
+        Повертає дані користувача при успішній реєстрації.
+        """
+    permission_classes = (permissions.AllowAny,)  # Доступно без авторизації
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -34,7 +43,12 @@ class RegisterView(APIView):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+
 class LogOutView(APIView):
+    """
+    View для виходу з системи.
+    Додає refresh токен до чорного списку, щоб анулювати його.
+    """
     def post(self, request):
         refresh_token = request.data.get('refresh')
         token = RefreshToken(refresh_token)

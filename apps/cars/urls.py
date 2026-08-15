@@ -10,6 +10,7 @@ from apps.cars.views import (
 )
 
 urlpatterns = [
+    # Ендпоінти доступу до машин і брендів
     path('brands/', BrandListCreateView.as_view(), name='brand-list-create'),
     path('brands/<int:pk>/', BrandDetailView.as_view(), name='brand-detail'),
     path('models/', CarModelListCreateView.as_view(), name='carmodel-list-create'),
