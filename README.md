@@ -1,337 +1,538 @@
 # AutoRia Clone — Car Marketplace API
 
-REST API платформи для продажу автомобілів, побудований на Django REST Framework.
+Навчальний REST API для платформи продажу автомобілів, побудований на **Django REST Framework**.
+
+Проєкт демонструє роботу з:
+
+- Django REST Framework
+- JWT-аутентифікацією
+- ролями та permissions
+- Docker / Docker Compose
+- MySQL
+- Redis
+- Celery та Celery Beat
+- фільтрацією та пошуком
+- асинхронними задачами
+- email-сповіщеннями
+- OpenAPI-документацією через DRF-Spectacular
+- інтеграцією з PrivatBank API
+- хмарною базою даних Railway
+
+> **Проєкт створений у навчальних цілях.**
+>
+> Поточна версія використовує вже налаштовану хмарну базу даних Railway з тестовими даними.
 
 ---
 
-## Стек технологій
+# Зміст
 
-### Backend
-- **Python 3.12** / **Django 5** / **Django REST Framework**
-- **MySQL 8** — основна база даних (хмарна Railway)
+- [Стек технологій](#стек-технологій)
+- [Архітектура](#архітектура)
+- [Запуск проекту](#запуск-проекту)
+- [База даних](#база-даних)
+- [Ролі та доступи](#ролі-та-доступи)
+- [Преміум акаунт](#преміум-акаунт)
+- [Основні API endpoints](#основні-api-endpoints)
+- [Celery Tasks](#celery-tasks)
+- [Фільтрація та пошук](#фільтрація-та-пошук)
+- [Email сповіщення](#email-сповіщення)
+- [Документація API](#документація-api)
+- [Тестування через Postman](#тестування-через-postman)
+- [Додавання нових ролей і permissions](#додавання-нових-ролей-і-permissions)
+- [Docker](#docker)
+- [Ліцензія](#ліцензія)
+
+---
+
+# Стек технологій
+
+## Backend
+
+- **Python 3.12**
+- **Django 6**
+- **Django REST Framework**
+- **MySQL 8** — основна база даних
 - **Redis** — брокер повідомлень для Celery
-- **Celery + Celery Beat** — асинхронні задачі та планувальник
-
-### Документація API
-- **DRF-Spectacular** — генерація OpenAPI схеми
-- **Swagger UI** — інтерактивна документація API
-- **ReDoc** — альтернативний перегляд документації
-
-### Автентифікація та безпека
-- **JWT** (SimpleJWT) — токен-автентифікація
-
-### Інтеграції
-- **Mailtrap** — тестова відправка email
-- **PrivatBank API** — курси валют
-
-### Інфраструктура
+- **Celery + Celery Beat** — асинхронні та періодичні задачі
 - **Docker / Docker Compose** — контейнеризація
 
+## Автентифікація
+
+- **JWT**
+- **djangorestframework-simplejwt**
+
+## Документація API
+
+- **DRF-Spectacular** — генерація OpenAPI-схеми
+- **Swagger UI** — інтерактивна документація
+- **ReDoc** — альтернативне представлення документації
+
+## Інтеграції
+
+- **Mailtrap** — тестування email
+- **PrivatBank API** — отримання курсів валют
+
+## Інші бібліотеки
+
+- **django-filter** — фільтрація оголошень
+- **Pillow** — робота із зображеннями
+
 ---
 
-## Запуск проекту
+# Архітектура
 
-### 1. Клонувати репозиторій
+Проєкт розділений на Django apps відповідно до окремих доменів:
+
+| App | Призначення |
+|-----|-------------|
+| `users` | користувачі, ролі, permissions, профілі |
+| `auth` | реєстрація, логін, JWT |
+| `listing` | оголошення та робота з ними |
+| `moderation` | модерація оголошень |
+| `cars` | бренди та моделі автомобілів |
+| `listing_stats` | статистика оголошень |
+| `payment` | курси валют та перерахунок цін |
+| `core` | спільні permissions, сервіси та інша інфраструктура |
+
+Для фонових задач використовується **Celery**, а для їхнього періодичного запуску — **Celery Beat**.
+
+---
+
+# Запуск проекту
+
+## 1. Клонування репозиторію
 
 ```bash
 git clone <url>
 cd python_test
 ```
 
-### 2. Створити `.env` файл
+---
 
-Скопіюйте `.env_example` та заповніть своїми даними:
+## 2. Створення `.env`
+
+Скопіюйте приклад конфігурації:
 
 ```bash
 cp .env_example .env
 ```
 
-Обов'язкові змінні (для хмарної БД Railway):
+Заповніть `.env` необхідними параметрами.
+
+### Поточна конфігурація
+
+Проєкт використовує хмарну базу даних Railway:
 
 ```env
-# Хмарна БД Railway
 MYSQL_HOST=acela.proxy.rlwy.net
 MYSQL_PORT=43944
 MYSQL_DATABASE=railway
 MYSQL_USER=root
 MYSQL_PASSWORD=lIIpVlQvnPRZQDOyqwaVObrGlHvZmowU
 MYSQL_ROOT_PASSWORD=lIIpVlQvnPRZQDOyqwaVObrGlHvZmowU
+```
 
-# Mailtrap
+Для тестування email через Mailtrap:
+
+```env
 EMAIL_HOST=sandbox.smtp.mailtrap.io
 EMAIL_HOST_USER=abf3ef193a3d41
 EMAIL_HOST_PASSWORD=2d85d3045723bc
 EMAIL_PORT=2525
+```
 
+Email, на який система надсилає службові повідомлення:
+
+```env
 MANAGERS_EMAIL=moderation@automarket.com
 ```
 
-> **Важливо:** Проект використовує хмарну базу даних Railway, тому **локальна папка `mysql/` не створюється** і не використовується.
+> **Примітка:** у навчальній версії проєкту тестові credentials вказані безпосередньо в README для спрощення перевірки проєкту.
 
-### 3. Запустити Docker
+---
+
+## 3. Запуск Docker
+
+Запустіть усі необхідні сервіси:
 
 ```bash
 docker compose up -d --build
 ```
 
-### 4. Застосувати міграції
+Docker Compose запускає:
 
-Міграції застосовуються автоматично при запуску, але якщо потрібно виконати вручну:
+- Django application
+- MySQL / підключення до БД
+- Redis
+- Celery worker
+- Celery Beat
+
+---
+
+## 4. Перевірка контейнерів
+
+```bash
+docker compose ps
+```
+
+Усі необхідні сервіси повинні мати статус `Up`.
+
+Для перегляду логів:
+
+```bash
+docker compose logs -f app
+```
+
+Для Celery:
+
+```bash
+docker compose logs -f celery
+```
+
+---
+
+## 5. Міграції
+
+Міграції застосовуються автоматично під час запуску контейнера.
+
+За необхідності їх можна виконати вручну:
 
 ```bash
 docker compose exec app python manage.py migrate
 ```
 
-### 5. Завантажити фікстури
+> **Важливо:** у поточній Railway БД міграції вже застосовані. При звичайному запуску проєкту повторно виконувати їх не потрібно.
+
+---
+
+# База даних
+
+Проєкт використовує **хмарну MySQL базу даних Railway**.
+
+Локальна MySQL база даних для поточної конфігурації не використовується.
+
+## Параметри бази даних
+
+| Параметр | Значення |
+|----------|----------|
+| Host | `acela.proxy.rlwy.net` |
+| Port | `43944` |
+| User | `root` |
+| Database | `railway |
+
+> Railway може відповідати повільніше за локальну базу даних. Це особливо помітно під час першого запиту або при виконанні кількох послідовних операцій.
+
+---
+
+# Важливо про fixtures
+
+У поточній версії проєкту **фікстури вже завантажені в Railway БД**.
+
+Також у БД вже існують тестові користувачі.
+
+Тому при звичайному запуску проєкту:
+
+**НЕ потрібно виконувати:**
 
 ```bash
 docker compose exec app python manage.py loaddata regions.json
-```
-```bash
 docker compose exec app python manage.py loaddata brands.json
+docker compose exec app python manage.py loaddata car_models.json
+docker compose exec app python manage.py loaddata listings.json
 ```
+
+Ці команди потрібні тільки у випадку, якщо проєкт запускається з **іншою або чистою базою даних**.
+
+---
+
+## Розгортання на іншій / чистій БД
+
+Якщо потрібно запустити проєкт із новою базою даних:
+
+### 1. Налаштувати `.env`
+
+Вкажіть credentials нової БД:
+
+```env
+MYSQL_HOST=...
+MYSQL_PORT=...
+MYSQL_DATABASE=...
+MYSQL_USER=...
+MYSQL_PASSWORD=...
+```
+
+### 2. Запустити Docker
+
 ```bash
+docker compose up -d --build
+```
+
+### 3. Застосувати міграції
+
+```bash
+docker compose exec app python manage.py migrate
+```
+
+### 4. Завантажити базові fixtures
+
+```bash
+docker compose exec app python manage.py loaddata regions.json
+docker compose exec app python manage.py loaddata brands.json
 docker compose exec app python manage.py loaddata car_models.json
 ```
 
-### 6. Створити суперкористувача
+### 5. Створити адміністратора
 
 ```bash
 docker compose exec app python manage.py createsuperuser
 ```
 
-Для тестування можна використовувати УЖЕ існуючі в БД:
+### 6. За необхідності завантажити тестові оголошення
 
-| Роль | Email | Пароль |
-|------|-------|--------|
+Файл `listings.json` містить посилання на конкретних користувачів.
+
+Тому перед його завантаженням необхідно створити користувачів, на яких посилаються fixtures.
+
+```bash
+docker compose exec app python manage.py loaddata listings.json
+```
+
+> **Примітка:** `listings.json` залежить від наявності відповідних користувачів у базі даних.
+
+---
+
+# Тестові користувачі
+
+У поточній Railway БД вже існують користувачі для тестування:
+
+| Роль | Email / username | Пароль |
+|------|------------------|--------|
 | **Admin** | `admin` | `admin` |
 | **Seller 1** | `seller1@mail.com` | `seller1111` |
 | **Seller 2** | `seller2@mail.com` | `seller1111` |
 
----
-
-## База даних
-
-Проект використовує **хмарну базу даних Railway** замість локальної.
-
-### Характеристики:
-
-| Параметр | Значення |
-|----------|----------|
-| **Хост** | `acela.proxy.rlwy.net` |
-| **Порт** | `43944` |
-| **Користувач** | `root` |
-| **База даних** | `railway` |
-
-> **Важливо про швидкодію:** Хмарна БД Railway може мати затримку відповіді **до 10-15 секунд** на кожен запит. Це нормально для безкоштовного тарифу хмарного хостингу.
-
-### Підключення до БД ззовні (DataGrip, DBeaver, MySQL Workbench)
-
-| Параметр | Значення |
-|----------|----------|
-| **Host** | `acela.proxy.rlwy.net` |
-| **Port** | `43944` |
-| **User** | `root` |
-| **Password** | `lIIpVlQvnPRZQDOyqwaVObrGlHvZmowU` |
-| **Database** | `railway` |
+> Ці облікові дані призначені виключно для тестової/навчальної версії проєкту.
 
 ---
 
-## Порти
-
-| Сервіс | Внутрішній порт | Зовнішній порт | Опис |
-|--------|-----------------|----------------|------|
-| app    | 8000            | 8000           | Django сервер |
-| web    | 80              | 80             | Nginx для статики |
-| redis  | 6379            | -              | Redis (не доступний ззовні) |
-
----
-
-## Перевірка роботи
-
-Після запуску переконайтеся, що всі сервіси працюють коректно:
-
-```bash
-# Перевірити статус контейнерів
-docker compose ps
-# Всі сервіси мають бути в статусі `Up`
-
-# Перевірити логи
-docker compose logs --tail=50
-
-# Перевірити API
-curl http://localhost:8000/api/listings/
-```
-
----
-
-## API Документація
-
-Після запуску проекту документація доступна за адресами:
-
-| Інтерфейс | URL |
-|-----------|-----|
-| Swagger UI | `http://localhost:8000/api/docs/` |
-| ReDoc | `http://localhost:8000/api/redoc/` |
-
----
-
-## Архітектура
-
-Проєкт розділений на Django apps відповідно до доменів:
-
-- `users` — користувачі, ролі, дозволи (permissions), профілі
-- `listing` — оголошення та їхня модерація
-- `cars` — бренди та моделі автомобілів
-- `listing_stats` — статистика оголошень
-- `payment` — курси валют та перерахунок цін
-- `core` — спільні моделі, permissions та сервіси
-
-Celery використовується для фонових задач та періодичного оновлення даних.
-
----
-
-## Ролі і доступи
+# Ролі та доступи
 
 | Роль | Можливості |
 |------|------------|
 | **Buyer** | перегляд оголошень, скарги, створення першого оголошення |
-| **Seller** | Все, що Buyer + створення/редагування оголошень, фото |
-| **Manager** | Модерація оголошень, управління юзерами |
-| **Admin (superuser)** | Повний доступ до всього |
+| **Seller** | усе, що Buyer + створення та редагування власних оголошень, робота з фото |
+| **Manager** | модерація оголошень, управління користувачами, статистика |
+| **Admin (superuser)** | повний доступ до системи |
 
-> Покупець автоматично стає продавцем при створенні першого оголошення.  
-> Базовий акаунт — одне активне оголошення. Преміум — необмежено.
+### Додаткові правила
+
+- Покупець автоматично стає продавцем після створення першого оголошення.
+- Базовий акаунт може мати одне активне оголошення.
+- Premium-акаунт може мати необмежену кількість активних оголошень.
+- Статистика доступна Premium Seller, Manager та Admin.
+- Manager може створювати бренди та моделі, але не може їх видаляти.
+- Видалення і редагування ключових сутностей `Brand` та `CarModel` доступне тільки Admin.
 
 ---
 
-## Преміум акаунт
+# Преміум акаунт
 
-Функціонал оплати реалізований як **заглушка** — без реальної платіжної системи.  
-При натисканні на `POST /api/users/me/premium/mock/` преміум активується одразу без оплати на 30 днів. У реальному проекті цей ендпоінт замінюється на інтеграцію з платіжним сервісом.
+Оплата реалізована як **mock-функціонал** без реальної платіжної системи.
+
+Ендпоінт:
+
+```http
+POST /api/users/me/premium/mock/
+```
+
+активує Premium-акаунт без фактичної оплати на 30 днів.
+
+У реальному комерційному проєкті цей механізм має бути замінений інтеграцією з платіжною системою.
 
 ---
 
-## Основні ендпоінти
+# Основні API endpoints
 
-### Auth
+## Auth
 
 | Метод | URL | Опис |
-|-------|-----|------|
+|------|-----|------|
 | POST | `/api/auth/register/` | Реєстрація |
 | POST | `/api/auth/login/` | Логін |
-| POST | `/api/auth/refresh/` | Оновлення токену |
-| POST | `/api/auth/logout/` | Вихід з акаунта |
+| POST | `/api/auth/refresh/` | Оновлення JWT |
+| POST | `/api/auth/logout/` | Вихід |
 
-### Users
+---
+
+## Users
 
 | Метод | URL | Опис | Доступ |
-|-------|-----|------|--------|
-| GET | `/api/users/` | Список юзерів | Admin / Manager |
-| GET | `/api/users/me/` | Свій акаунт | Всі |
-| GET | `/api/users/<pk>/` | Переглянути акаунт по ID | Всі |
+|------|-----|------|--------|
+| GET | `/api/users/` | Список користувачів | Admin / Manager |
+| GET | `/api/users/me/` | Поточний користувач | Всі |
+| GET | `/api/users/<pk>/` | Перегляд користувача | Всі |
 | PATCH | `/api/users/me/update/` | Оновити власний акаунт | Всі |
 | DELETE | `/api/users/me/delete/` | Видалити власний акаунт | Всі |
-| DELETE | `/api/users/<pk>/delete/` | Видалити акаунт по ID | Admin / Manager |
-| POST | `/api/users/me/premium/mock/` | Отримати преміум акаунт | Buyer/Seller |
-| PATCH | `/api/users/<pk>/block/` | Заблокувати юзера | Admin / Manager |
-| PATCH | `/api/users/<pk>/unblock/` | Розблокувати юзера | Admin / Manager |
-| PATCH | `/api/users/<pk>/manager/` | Призначити менеджера | Admin |
+| DELETE | `/api/users/<pk>/delete/` | Видалити користувача | Admin / Manager |
+| POST | `/api/users/me/premium/mock/` | Активувати Premium | Buyer / Seller |
+| PATCH | `/api/users/<pk>/block/` | Заблокувати користувача | Admin / Manager |
+| PATCH | `/api/users/<pk>/unblock/` | Розблокувати користувача | Admin / Manager |
+| PATCH | `/api/users/<pk>/manager/` | Призначити Manager | Admin |
 
-### Listings
+---
+
+## Listings
 
 | Метод | URL | Опис | Доступ |
-|-------|-----|------|--------|
-| GET | `/api/listings/` | Всі активні оголошення | Публічно |
-| GET | `/api/listings/<pk>/` | Одне оголошення | Публічно |
+|------|-----|------|--------|
+| GET | `/api/listings/` | Список активних оголошень | Публічно |
+| GET | `/api/listings/<pk>/` | Перегляд оголошення | Публічно |
 | GET | `/api/listings/regions/` | Список регіонів | Публічно |
-| GET | `/api/listings/my/` | Мої оголошення | Seller |
-| POST | `/api/listings/create/` | Створити оголошення | Buyer/Seller |
-| PATCH | `/api/listings/update/<pk>/` | Редагувати оголошення | Seller (власник) |
-| DELETE | `/api/listings/delete/<pk>/` | Зняти з продажу | Seller (власник) |
-| POST | `/api/listings/<pk>/photos/` | Завантажити фото | Seller (власник) |
-| DELETE | `/api/listings/photos/<pk>/` | Видалити фото | Seller (власник) |
-| POST | `/api/listings/report-problem/<pk>/` | Скарга на оголошення | Залогінений |
-| GET | `/api/listings/edit/` | Список оголошень у статусі Pending | Admin / Manager |
-| PATCH | `/api/listings/moderation/<pk>/` | Модерувати оголошення | Admin / Manager |
+| GET | `/api/listings/my/` | Власні оголошення | Seller |
+| POST | `/api/listings/create/` | Створити оголошення | Buyer / Seller |
+| PATCH | `/api/listings/update/<pk>/` | Редагувати оголошення | Seller — власник |
+| DELETE | `/api/listings/delete/<pk>/` | Зняти оголошення з продажу | Seller — власник |
+| POST | `/api/listings/<pk>/photos/` | Завантажити фото | Seller — власник |
+| DELETE | `/api/listings/photos/<pk>/` | Видалити фото | Seller — власник |
+| POST | `/api/listings/report-problem/<pk>/` | Поскаржитися на оголошення | Авторизований користувач |
+| GET | `/api/listings/edit/` | Pending-оголошення | Admin / Manager |
+| PATCH | `/api/listings/moderation/<pk>/` | Модерація оголошення | Admin / Manager |
 | GET | `/api/listings/statistics/<pk>/` | Статистика оголошення | Premium Seller / Manager / Admin |
 
-### Cars
+---
+
+## Cars
 
 | Метод | URL | Опис | Доступ |
-|-------|-----|------|--------|
+|------|-----|------|--------|
 | GET | `/api/cars/brands/` | Список брендів | Публічно |
-| GET | `/api/cars/brands/<pk>/` | Переглянути бренд | Публічно |
+| GET | `/api/cars/brands/<pk>/` | Перегляд бренду | Публічно |
 | GET | `/api/cars/models/` | Список моделей | Публічно |
-| GET | `/api/cars/models/<pk>/` | Переглянути модель | Публічно |
-| GET | `/api/cars/brands/<pk>/models/` | Моделі бренду | Публічно |
-| POST | `/api/cars/request-brand/` | Запит на нову марку | Залогінений |
+| GET | `/api/cars/models/<pk>/` | Перегляд моделі | Публічно |
+| GET | `/api/cars/brands/<pk>/models/` | Моделі конкретного бренду | Публічно |
+| POST | `/api/cars/request-brand/` | Запит на нову марку | Авторизований користувач |
 | POST | `/api/cars/brands/` | Створення бренду | Admin / Manager |
 | PATCH / DELETE | `/api/cars/brands/<pk>/` | Редагування / видалення бренду | Admin |
 | POST | `/api/cars/models/` | Створення моделі | Admin / Manager |
 | PATCH / DELETE | `/api/cars/models/<pk>/` | Редагування / видалення моделі | Admin |
 
-### Payment
+---
+
+## Payment
 
 | Метод | URL | Опис | Доступ |
-|-------|-----|------|--------|
-| GET | `/api/payment/rate/` | Актуальний курс валют | Публічно |
+|------|-----|------|--------|
+| GET | `/api/payment/rate/` | Поточний курс валют | Публічно |
 
 ---
 
-## Celery Tasks
+# Celery Tasks
 
-| Task | Розклад | Опис |
-|------|---------|------|
-| `fetch_currency_rates_task` | Щодня о 9:00 | Оновлення курсів з ПриватБанку |
-| `update_listings_prices_task` | Після оновлення курсів | Перерахунок цін оголошень |
-| `moderation_listings_task` | При створенні/редагуванні | Перевірка на нецензурну лексику |
+Проєкт використовує Celery для виконання фонових задач.
 
-### Примусовий запуск оновлення курсів (для тестування)
+| Task | Запуск | Опис |
+|------|--------|------|
+| `fetch_currency_rates_task` | щодня о 09:00 | Отримання курсів валют з PrivatBank API |
+| `update_listings_prices_task` | після оновлення курсів | Перерахунок цін оголошень |
+| `moderation_listings_task` | при створенні / редагуванні | Перевірка оголошень на нецензурну лексику |
+
+## Примусовий запуск оновлення курсів
+
+Для тестування задачу можна запустити вручну:
 
 ```bash
 docker compose exec celery celery -A config call apps.payment.tasks.fetch_currency_rates_task
 ```
 
 Після виконання:
-- в таблиці `currency_rate` з'явиться новий запис з актуальним курсом
-- ціни всіх активних оголошень автоматично перерахуються
+
+- у таблиці `currency_rate` з'явиться актуальний курс;
+- ціни активних оголошень будуть перераховані відповідно до нового курсу.
 
 ---
 
-## Фільтрація і пошук
+# Фільтрація та пошук
 
-Ендпоінт `/api/listings/` підтримує наступні параметри:
+Ендпоінт:
 
+```text
+/api/listings/
 ```
+
+підтримує фільтрацію, пошук та сортування.
+
+### Приклади
+
+```text
 ?body_type=suv
+```
+
+```text
 ?fuel_type=electric
+```
+
+```text
 ?region=1
+```
+
+```text
 ?condition_type=new
+```
+
+```text
 ?price_usd_min=10000&price_usd_max=30000
+```
+
+```text
 ?mileage_max=50000
+```
+
+```text
 ?year_min=2019
+```
+
+```text
 ?search=BMW
+```
+
+```text
 ?ordering=price_usd
+```
+
+```text
 ?ordering=-created_at
 ```
 
+Параметри можна комбінувати:
+
+```text
+/api/listings/?fuel_type=electric&year_min=2020&price_usd_max=30000
+```
+
 ---
 
-## Email сповіщення
+# Email сповіщення
 
-Проект використовує **Mailtrap** для тестування email — всі листи перехоплюються і відображаються у веб-інтерфейсі Mailtrap, не потрапляючи на реальні поштові скриньки.
+Для тестування email використовується **Mailtrap**.
 
-Листи відправляються:
-- Менеджеру при блокуванні оголошення після 3 невдалих спроб модерації
-- Менеджеру при скарзі на оголошення
-- Менеджеру при запиті на нову марку авто
+Листи не надсилаються на реальні поштові скриньки, а перехоплюються Mailtrap та доступні у його веб-інтерфейсі.
 
-### Налаштування Mailtrap
+Система надсилає службові повідомлення:
 
-1. Зареєструйтеся на [mailtrap.io](https://mailtrap.io)
-2. Перейдіть у `Email Testing` → `Sandboxes` → `My Sandbox` → вкладка `SMTP`
-3. Вкажіть отримані дані у `.env`:
+- менеджеру після блокування оголошення після 3 невдалих спроб модерації;
+- менеджеру при скарзі на оголошення;
+- менеджеру при запиті на додавання нової марки автомобіля.
+
+## Налаштування Mailtrap
+
+1. Зареєструйтеся на Mailtrap.
+2. Відкрийте `Email Testing`.
+3. Перейдіть до `Sandboxes`.
+4. Відкрийте потрібний Sandbox.
+5. Перейдіть на вкладку `SMTP`.
+6. Скопіюйте SMTP credentials у `.env`.
+
+Приклад:
 
 ```env
 EMAIL_HOST=sandbox.smtp.mailtrap.io
@@ -342,87 +543,203 @@ EMAIL_PORT=2525
 
 ---
 
-## Додавання нових ролей і дозволів
+# Документація API
 
-Ролі та дозволи змінюються через міграції — це свідоме рішення для безпеки.
+Для автоматичної генерації документації використовується **DRF-Spectacular**.
 
-### Додати новий пермішин:
+Після запуску проєкту доступні:
 
-1. Створіть порожню міграцію:
-   ```bash
-   docker compose exec app python manage.py makemigrations users --empty --name add_new_permission
-   ```
+| Інтерфейс | URL |
+|-----------|-----|
+| Swagger UI | `http://localhost:8000/api/docs/` |
+| ReDoc | `http://localhost:8000/api/redoc/` |
+| OpenAPI schema | `http://localhost:8000/api/schema/` |
 
-2. Заповніть її за зразком:
-   ```python
-   def add_permission(apps, schema_editor):
-       CustomPermission = apps.get_model('users', 'CustomPermission')
-       RolePermissions = apps.get_model('users', 'RolePermissions')
-       Role = apps.get_model('users', 'Role')
+## Swagger UI
 
-       perm = CustomPermission.objects.create(
-           name='Назва пермішину',
-           codename='codename_permission'
-       )
-       role = Role.objects.get(name='seller')
-       RolePermissions.objects.create(role=role, permission=perm)
-   ```
+Swagger UI дозволяє:
 
-3. Застосуйте міграцію:
-   ```bash
-   docker compose exec app python manage.py migrate
-   ```
+1. переглядати всі API endpoints;
+2. бачити HTTP-методи та параметри;
+3. переглядати схеми запитів та відповідей;
+4. авторизуватися через JWT;
+5. безпосередньо виконувати API-запити.
+
+Відкрийте:
+
+```text
+http://localhost:8000/api/docs/
+```
+
+та використовуйте кнопку **Authorize** для авторизації.
 
 ---
 
-## Тестування
+# Тестування через Postman
 
-### Postman колекція
+Postman-колекція знаходиться у:
 
-Postman колекція знаходиться у файлі `postman/AutoRia Clone API.postman_collection.json`.
+```text
+postman/AutoRia Clone API.postman_collection.json
+```
 
-1. Імпортуйте колекцію в Postman
-2. Створіть Environment зі змінними:
+## Імпорт
 
-| Variable | Initial value |
-|----------|---------------|
+1. Відкрийте Postman.
+2. Натисніть **Import**.
+3. Виберіть файл:
+
+```text
+postman/AutoRia Clone API.postman_collection.json
+```
+
+4. Створіть Environment.
+
+### Environment variables
+
+| Variable | Значення |
+|----------|----------|
 | `host` | `http://localhost:8000` |
-| `access` | (заповниться автоматично) |
-| `refresh` | (заповниться автоматично) |
+| `access` | заповнюється автоматично |
+| `refresh` | заповнюється автоматично |
 
 Після виконання `login` access та refresh tokens автоматично зберігаються в Environment.
 
-### Swagger UI
+---
 
-Найзручніший спосіб тестування — Swagger UI:
-1. Відкрийте `http://localhost:8000/api/docs/`
-2. Авторизуйтеся через кнопку `Authorize`
-3. Тестуйте ендпоїнти прямо в інтерфейсі
+# Додавання нових ролей і permissions
+
+Ролі та permissions є частиною архітектури системи та змінюються через **Django migrations**, а не через UI.
+
+Це дозволяє зберігати зміни в системі permissions у коді та відтворювати їх на інших середовищах.
+
+## Додавання нового permission
+
+Створіть порожню міграцію:
+
+```bash
+docker compose exec app python manage.py makemigrations users --empty --name add_new_permission
+```
+
+У створеній міграції можна використати наступну структуру:
+
+```python
+def add_permission(apps, schema_editor):
+    CustomPermission = apps.get_model('users', 'CustomPermission')
+    RolePermissions = apps.get_model('users', 'RolePermissions')
+    Role = apps.get_model('users', 'Role')
+
+    perm = CustomPermission.objects.create(
+        name='Назва permission',
+        codename='codename_permission'
+    )
+
+    role = Role.objects.get(name='seller')
+
+    RolePermissions.objects.create(
+        role=role,
+        permission=perm
+    )
+```
+
+Після цього застосуйте міграцію:
+
+```bash
+docker compose exec app python manage.py migrate
+```
+
+Нові ролі додаються аналогічним способом через міграції.
 
 ---
 
-## Команди для Docker
+# Docker
+
+## Запуск
 
 ```bash
-# Запустити проект
 docker compose up -d --build
+```
 
-# Перевірити статус
+## Перевірка статусу
+
+```bash
 docker compose ps
+```
 
-# Переглянути логи
+## Логи Django
+
+```bash
 docker compose logs -f app
+```
+
+## Логи Celery
+
+```bash
 docker compose logs -f celery
+```
 
-# Перезапустити окремий сервіс
+## Логи всіх сервісів
+
+```bash
+docker compose logs -f
+```
+
+## Перезапуск Django
+
+```bash
 docker compose restart app
+```
 
-# Зупинити проект
+## Зупинка проекту
+
+```bash
 docker compose down
 ```
 
 ---
 
-## Ліцензія
+# Перевірка роботи
 
-Цей проект створений у навчальних цілях.
+Після запуску можна перевірити API:
+
+```bash
+curl http://localhost:8000/api/listings/
+```
+
+Також перевірте статус контейнерів:
+
+```bash
+docker compose ps
+```
+
+Очікується, що основні сервіси знаходяться у статусі:
+
+```text
+Up
+```
+
+Після цього можна відкрити:
+
+### API
+
+```text
+http://localhost:8000/api/listings/
+```
+
+### Swagger UI
+
+```text
+http://localhost:8000/api/docs/
+```
+
+### ReDoc
+
+```text
+http://localhost:8000/api/redoc/
+```
+
+---
+
+# Ліцензія
+
+Цей проєкт створений у навчальних цілях.
