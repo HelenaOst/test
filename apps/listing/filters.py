@@ -4,6 +4,12 @@ from apps.listing.models import Listing, Region
 
 
 class ListingFilter(django_filters.FilterSet):
+    """
+    Фільтр для публічного списку оголошень.
+    Дозволяє фільтрувати за різними характеристиками автомобіля.
+    """
+
+    # ========== ВИБІРКОВІ ФІЛЬТРИ ==========
     region = django_filters.ModelChoiceFilter(queryset=Region.objects.all())
     body_type = django_filters.ChoiceFilter(choices=Listing.BodyType.choices)
     condition_type = django_filters.ChoiceFilter(choices=Listing.CarConditions.choices)
@@ -11,21 +17,20 @@ class ListingFilter(django_filters.FilterSet):
     transmission_type = django_filters.ChoiceFilter(choices=Listing.TransmissionType.choices)
     drive_type = django_filters.ChoiceFilter(choices=Listing.DriveType.choices)
 
+    # ========== ЦІНОВІ ДІАПАЗОНИ ==========
     price_usd_min = django_filters.NumberFilter(field_name='price_usd', lookup_expr='gte')
     price_usd_max = django_filters.NumberFilter(field_name='price_usd', lookup_expr='lte')
-
     price_eur_min = django_filters.NumberFilter(field_name='price_eur', lookup_expr='gte')
     price_eur_max = django_filters.NumberFilter(field_name='price_eur', lookup_expr='lte')
-
     price_uah_min = django_filters.NumberFilter(field_name='price_uah', lookup_expr='gte')
     price_uah_max = django_filters.NumberFilter(field_name='price_uah', lookup_expr='lte')
 
+    # ========== ТЕХНІЧНІ ПАРАМЕТРИ ==========
     mileage_min = django_filters.NumberFilter(field_name='mileage', lookup_expr='gte')
     mileage_max = django_filters.NumberFilter(field_name='mileage', lookup_expr='lte')
-
     year_min = django_filters.NumberFilter(field_name='year', lookup_expr='gte')
     year_max = django_filters.NumberFilter(field_name='year', lookup_expr='lte')
 
     class Meta:
         model = Listing
-        fields = []
+        fields = []  # Всі поля визначені явно вище
