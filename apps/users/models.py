@@ -7,6 +7,8 @@ from apps.core.services.upload_image import upload_avatar, upload_profile_logo
 
 
 class CustomPermission(models.Model):
+    """Кастомний дозвіл для розширення системи прав доступу."""
+
     class Meta:
         db_table = 'custom_permission'
 
@@ -18,6 +20,8 @@ class CustomPermission(models.Model):
 
 
 class Role(models.Model):
+    """Роль користувача з набором дозволів."""
+
     class Meta:
         db_table = 'role'
 
@@ -35,6 +39,8 @@ class Role(models.Model):
 
 
 class Profile(BaseModel):
+    """Профіль користувача з додатковою інформацією та тарифом."""
+
     class Meta:
         db_table = 'profile'
         indexes = [
@@ -53,7 +59,8 @@ class Profile(BaseModel):
     type_profile = models.CharField(
         max_length=20,
         choices=TypeProfile,
-        default=TypeProfile.INDIVIDUAL)
+        default=TypeProfile.INDIVIDUAL
+    )
 
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, help_text='Інформація про продавця')
@@ -71,11 +78,11 @@ class Profile(BaseModel):
 
 
 class UserManager(BaseUserManager):
+    """Кастомний менеджер для створення користувачів."""
 
     def create_user(self, username, phone, password=None, **extra_fields):
         if not username:
             raise ValueError("Username is required")
-
         if not phone:
             raise ValueError("Phone is required")
 
@@ -84,33 +91,22 @@ class UserManager(BaseUserManager):
             phone=phone,
             **extra_fields
         )
-
         user.set_password(password)
         user.save(using=self._db)
-
         return user
 
-    def create_superuser(
-        self,
-        username,
-        phone,
-        password=None,
-        **extra_fields
-    ):
+    def create_superuser(self, username, phone, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
 
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True.")
-
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
 
-        admin_role = Role.objects.get(
-            name=Role.RoleName.ADMIN
-        )
-
+        # Автоматичне призначення ролі ADMIN
+        admin_role = Role.objects.get(name=Role.RoleName.ADMIN)
         extra_fields["role"] = admin_role
 
         return self.create_user(
@@ -122,6 +118,8 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser, BaseModel):
+    """Кастомна модель користувача з м'яким видаленням."""
+
     class Meta:
         db_table = 'user'
         ordering = ['id']
@@ -137,7 +135,8 @@ class User(AbstractUser, BaseModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='members', )
+        related_name='members',
+    )
 
     role = models.ForeignKey(
         Role,
@@ -153,22 +152,38 @@ class User(AbstractUser, BaseModel):
         return f"{self.username} ({self.role.name if self.role else 'Без ролі'})"
 
     def soft_delete(self):
+        """М'яке видалення користувача."""
         if not self.deleted_at:
             self.is_active = False
             self.deleted_at = timezone.now()
             self.save(update_fields=['is_active', 'deleted_at'])
 
     def restore(self):
+        """Відновлення м'яко видаленого користувача."""
         self.is_active = True
         self.deleted_at = None
         self.save(update_fields=['is_active', 'deleted_at'])
 
+
 class RolePermissions(models.Model):
+    """Зв'язок між ролями та дозволами."""
+
     class Meta:
         db_table = 'role_permissions'
         constraints = [
-            models.UniqueConstraint(fields=['role', 'permission'], name='unique_role_permission')
+            models.UniqueConstraint(
+                fields=['role', 'permission'],
+                name='unique_role_permission'
+            )
         ]
 
-    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name='role_permissions')
-    permission = models.ForeignKey(CustomPermission, on_delete=models.CASCADE, related_name='permission_role_junction')
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.CASCADE,
+        related_name='role_permissions'
+    )
+    permission = models.ForeignKey(
+        CustomPermission,
+        on_delete=models.CASCADE,
+        related_name='permission_role_junction'
+    )

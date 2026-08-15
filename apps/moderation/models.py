@@ -5,11 +5,13 @@ from apps.listing.models import Listing
 from apps.users.models import User
 
 
-# Create your models here.
 class ListingModeration(BaseModel):
+    """Лог модерації оголошень з історією змін статусу."""
+
     class Meta:
         db_table = 'listing_moderation'
         ordering = ['-created_at']
+
     class ModerationAction(models.TextChoices):
         CREATED = 'created', 'Створено'
         EDITED = 'edited', 'Відредаговано продавцем'
@@ -21,7 +23,8 @@ class ListingModeration(BaseModel):
     listing = models.ForeignKey(
         Listing,
         on_delete=models.CASCADE,
-        related_name='moderation_logs')
+        related_name='moderation_logs'
+    )
 
     moderation_action = models.CharField(max_length=20, choices=ModerationAction)
 
@@ -30,6 +33,8 @@ class ListingModeration(BaseModel):
         related_name='moderated_listings',
         on_delete=models.SET_NULL,
         null=True,
-        blank=True)
+        blank=True
+    )
+
     send_letter_at = models.DateTimeField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)

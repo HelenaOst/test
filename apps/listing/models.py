@@ -11,36 +11,40 @@ from apps.users.models import Profile, User
 
 
 class Region(models.Model):
+    """Регіон/область для оголошень."""
+
     class Meta:
         db_table = 'region'
         ordering = ["id"]
+
     name = models.CharField(max_length=100)
-    slug = models.SlugField(max_length=100, unique=True) #mysite.com/regions/sumska-oblast
+    slug = models.SlugField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
 
 
 def validate_max_year(value):
+    """Валідатор: рік випуску не може перевищувати поточний рік + 1."""
     current_year = timezone.now().year
     if value > current_year + 1:
         raise ValidationError(f"Рік випуску не може бути більшим за {current_year + 1}.")
 
+
 class Listing(BaseModel):
+    """Модель оголошення про продаж автомобіля."""
+
     class Meta:
         db_table = 'listing'
         ordering = ['id']
-        # Додаємо індекси для Highload-оптимізації
         indexes = [
-            # Для швидкого сортування за цінами (Варіант 3 з Celery)
+            # Індекси для швидкого сортування за цінами
             models.Index(fields=['price_usd'], name='listing_price_usd_idx'),
             models.Index(fields=['price_eur'], name='listing_price_eur_idx'),
             models.Index(fields=['price_uah'], name='listing_price_uah_idx'),
-
-            # Для швидкого пошуку нових/старих машин покупцями
+            # Індекс для фільтрації за роком випуску
             models.Index(fields=['year'], name='listing_year_idx'),
-
-            # Для швидкої роботи менеджерів з перевірки оголошень
+            # Індекс для швидкої роботи менеджерів з модерації
             models.Index(fields=['status'], name='listing_status_idx'),
         ]
 
@@ -88,28 +92,28 @@ class Listing(BaseModel):
         BLOCKED = 'blocked', 'Заблоковано'
         INACTIVE = 'inactive', 'Знято з продажу продавцем'
 
-    # characteristics
+    # ==================== ХАРАКТЕРИСТИКИ ====================
     owner = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="listings")
+        related_name="listings"
+    )
 
     car_model = models.ForeignKey(
         CarModel,
         on_delete=models.CASCADE,
-        related_name="listings")
+        related_name="listings"
+    )
 
     color = models.CharField(max_length=50)
     region = models.ForeignKey(Region, on_delete=models.PROTECT, related_name="listings")
 
     year = models.PositiveIntegerField(
-        validators=[
-            MinValueValidator(1900),
-            validate_max_year
-        ]
+        validators=[MinValueValidator(1900), validate_max_year]
     )
-    mileage = models.PositiveIntegerField(help_text='Mileage in kilometers')
+    mileage = models.PositiveIntegerField(help_text='Пробіг у кілометрах')
     engine_volume = models.DecimalField(max_digits=4, decimal_places=1)
+
     condition_type = models.CharField(max_length=20, choices=CarConditions)
     body_type = models.CharField(max_length=20, choices=BodyType)
     fuel_type = models.CharField(max_length=20, choices=FuelType)
@@ -117,12 +121,13 @@ class Listing(BaseModel):
     drive_type = models.CharField(max_length=20, choices=DriveType)
     description = models.TextField(blank=True)
 
-    # price
+    # ==================== ЦІНА ====================
     currency = models.CharField(max_length=10, choices=CurrencyType)
     original_price = models.DecimalField(max_digits=10, decimal_places=2)
     price_usd = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     price_eur = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     price_uah = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
     exchange_rate = models.ForeignKey(
         CurrencyRate,
         on_delete=models.SET_NULL,
@@ -130,20 +135,23 @@ class Listing(BaseModel):
         blank=True,
     )
 
-    # listing status
+    # ==================== СТАТУС ====================
     status = models.CharField(max_length=10, choices=ListingStatus, default=ListingStatus.PENDING)
 
-    # edit counter
+    # Лічильник редагувань для модерації
     edit_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.car_model.brand} {self.car_model} {self.year}"
 
+
 class CarImage(models.Model):
+    """Фотографії автомобіля в оголошенні."""
+
     class Meta:
         db_table = 'car_images'
         ordering = ['id']
+
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="car_images")
     image = models.ImageField(upload_to=upload_listing_image)
-    is_main = models.BooleanField(default=False)
-
+    is_main = models.BooleanField(default=False)  # Головне фото оголошення
