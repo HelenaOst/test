@@ -141,19 +141,6 @@ docker compose exec db mysql -u user -puser car_shop_db
 mysql -h localhost -P 3307 -u user -puser car_shop_db
 ```
 
-### Очищення даних БД
-
-```bash
-# Зупинити контейнери
-docker compose down
-
-# Видалити папку з даними
-rm -rf ./mysql
-
-# Запустити заново
-docker compose up -d --build
-```
-
 ---
 
 ## Порти
@@ -186,7 +173,6 @@ docker compose exec app python manage.py dbshell
 # Перевірити API
 curl http://localhost:8000/api/listings/
 ```
-
 ---
 
 ## API Документація
@@ -439,36 +425,6 @@ docker compose down -v
 rm -rf ./mysql
 ```
 
----
-
-## Поширені проблеми та рішення
-
-### Порт 8000 або 3307 вже зайнятий
-
-**Симптом:** `Bind for 0.0.0.0:8000 failed: port is already allocated`
-
-**Рішення:**
-```bash
-# Знайти контейнер, який займає порт
-docker ps --filter "publish=8000"
-
-# Зупинити його
-docker stop <container_name>
-
-# Або зупинити всі контейнери
-docker stop $(docker ps -q)
-```
-
-### MySQL не запускається
-
-**Симптом:** `--initialize specified but the data directory has files in it`
-
-**Рішення:**
-```bash
-docker compose down
-rm -rf ./mysql
-docker compose up -d --build
-```
 ---
 
 ## Ліцензія
