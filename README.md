@@ -8,7 +8,7 @@ REST API платформи для продажу автомобілів, поб
 
 ### Backend
 - **Python 3.12** / **Django 5** / **Django REST Framework**
-- **MySQL 8** — основна база даних
+- **MySQL 8** — основна база даних (хмарна Railway)
 - **Redis** — брокер повідомлень для Celery
 - **Celery + Celery Beat** — асинхронні задачі та планувальник
 
@@ -46,23 +46,27 @@ cd python_test
 cp .env_example .env
 ```
 
-Обов'язкові змінні:
+Обов'язкові змінні (для хмарної БД Railway):
 
 ```env
-MYSQL_USER=user
-MYSQL_PASSWORD=user
-MYSQL_ROOT_PASSWORD=superuser
-MYSQL_DATABASE=car_shop_db
-MYSQL_HOST=db
-MYSQL_PORT=3306
+# Хмарна БД Railway
+MYSQL_HOST=acela.proxy.rlwy.net
+MYSQL_PORT=43944
+MYSQL_DATABASE=railway
+MYSQL_USER=root
+MYSQL_PASSWORD=lIIpVlQvnPRZQDOyqwaVObrGlHvZmowU
+MYSQL_ROOT_PASSWORD=lIIpVlQvnPRZQDOyqwaVObrGlHvZmowU
 
+# Mailtrap
 EMAIL_HOST=sandbox.smtp.mailtrap.io
-EMAIL_HOST_USER=your_mailtrap_user
-EMAIL_HOST_PASSWORD=your_mailtrap_password
+EMAIL_HOST_USER=abf3ef193a3d41
+EMAIL_HOST_PASSWORD=2d85d3045723bc
 EMAIL_PORT=2525
 
 MANAGERS_EMAIL=moderation@automarket.com
 ```
+
+> **Важливо:** Проект використовує хмарну базу даних Railway, тому **локальна папка `mysql/` не створюється** і не використовується.
 
 ### 3. Запустити Docker
 
@@ -71,6 +75,8 @@ docker compose up -d --build
 ```
 
 ### 4. Застосувати міграції
+
+Міграції застосовуються автоматично при запуску, але якщо потрібно виконати вручну:
 
 ```bash
 docker compose exec app python manage.py migrate
@@ -88,58 +94,46 @@ docker compose exec app python manage.py loaddata brands.json
 docker compose exec app python manage.py loaddata car_models.json
 ```
 
-### Опціонально: фікстури з оголошеннями
+### 6. Створити суперкористувача
 
-Для швидкого тестування можна завантажити `listings.json`.
+```bash
+docker compose exec app python manage.py createsuperuser
+```
 
-Перед завантаженням необхідно:
-1. Створити суперкористувача:
-   ```bash
-   docker compose exec app python manage.py createsuperuser
-   ```
-2. Зареєструвати через API двох продавців (вони повинні мати ID `2` і `3`)
-3. Користувачу з ID `2` надати преміум-акаунт через ендпоінт `/api/users/me/premium/mock/` або через БД в таблиці profile,  в полі account_type вказати premium замість basic
-4. Завантажити фікстуру:
-   ```bash
-   docker compose exec app python manage.py loaddata listings.json
-   ```
+Для тестування можна використовувати УЖЕ існуючі в БД:
+
+| Роль | Email | Пароль |
+|------|-------|--------|
+| **Admin** | `admin` | `admin` |
+| **Seller 1** | `seller1@mail.com` | `seller1111` |
+| **Seller 2** | `seller2@mail.com` | `seller1111` |
 
 ---
 
 ## База даних
 
-У проекті використовується **локальний volume** `./mysql:/var/lib/mysql` — всі дані зберігаються у папці `mysql` в корені проекту.
+Проект використовує **хмарну базу даних Railway** замість локальної.
 
-> **Важливо:** Папка `mysql/` додана в `.gitignore` і не повинна потрапляти в репозиторій.
-
-### Підключення до БД ззовні (DataGrip, DBeaver, MySQL Workbench)
-
-| Параметр | Значення | Примітка |
-|----------|----------|----------|
-| **Host** | `localhost` | або `127.0.0.1` |
-| **Port** | `3307` | ⚠️ зовнішній порт, не 3306! |
-| **User** | `user` | з `.env` (`MYSQL_USER`) |
-| **Password** | `user` | з `.env` (`MYSQL_PASSWORD`) |
-| **Database** | `car_shop_db` | з `.env` (`MYSQL_DATABASE`) |
-
-> **Важливо:** Всередині Docker-мережі БД доступна за адресою `db:3306`. Ззовні (з вашого комп'ютера) — `localhost:3307`.
-
-### Підключення як root
+### Характеристики:
 
 | Параметр | Значення |
 |----------|----------|
+| **Хост** | `acela.proxy.rlwy.net` |
+| **Порт** | `43944` |
+| **Користувач** | `root` |
+| **База даних** | `railway` |
+
+> **Важливо про швидкодію:** Хмарна БД Railway може мати затримку відповіді **до 10-15 секунд** на кожен запит. Це нормально для безкоштовного тарифу хмарного хостингу.
+
+### Підключення до БД ззовні (DataGrip, DBeaver, MySQL Workbench)
+
+| Параметр | Значення |
+|----------|----------|
+| **Host** | `acela.proxy.rlwy.net` |
+| **Port** | `43944` |
 | **User** | `root` |
-| **Password** | `superuser` (з `.env`) |
-
-### Перевірка підключення
-
-```bash
-# Через Docker
-docker compose exec db mysql -u user -puser car_shop_db
-
-# Через клієнт на хості (якщо встановлений MySQL)
-mysql -h localhost -P 3307 -u user -puser car_shop_db
-```
+| **Password** | `lIIpVlQvnPRZQDOyqwaVObrGlHvZmowU` |
+| **Database** | `railway` |
 
 ---
 
@@ -148,7 +142,6 @@ mysql -h localhost -P 3307 -u user -puser car_shop_db
 | Сервіс | Внутрішній порт | Зовнішній порт | Опис |
 |--------|-----------------|----------------|------|
 | app    | 8000            | 8000           | Django сервер |
-| db     | 3306            | 3307           | MySQL |
 | web    | 80              | 80             | Nginx для статики |
 | redis  | 6379            | -              | Redis (не доступний ззовні) |
 
@@ -166,13 +159,10 @@ docker compose ps
 # Перевірити логи
 docker compose logs --tail=50
 
-# Перевірити підключення до БД
-docker compose exec app python manage.py dbshell
-# Якщо підключилося — введіть \q для виходу
-
 # Перевірити API
 curl http://localhost:8000/api/listings/
 ```
+
 ---
 
 ## API Документація
@@ -235,18 +225,18 @@ Celery використовується для фонових задач та п
 
 ### Users
 
-| Метод | URL                           | Опис | Доступ |
-|-------|-------------------------------|------|--------|
-| GET | `/api/users/`                 | Список юзерів | Admin / Manager |
-| GET | `/api/users/me/`              | Свій акаунт | Всі |
-| GET | `/api/users/<pk>/`            | Переглянути акаунт по ID | Всі |
-| PATCH | `/api/users/me/update/`       | Оновити власний акаунт | Всі |
-| DELETE | `/api/users/me/delete/`       | Видалити власний акаунт | Всі |
-| DELETE | `/api/users/<pk>/delete/`     | Видалити акаунт по ID | Admin / Manager |
+| Метод | URL | Опис | Доступ |
+|-------|-----|------|--------|
+| GET | `/api/users/` | Список юзерів | Admin / Manager |
+| GET | `/api/users/me/` | Свій акаунт | Всі |
+| GET | `/api/users/<pk>/` | Переглянути акаунт по ID | Всі |
+| PATCH | `/api/users/me/update/` | Оновити власний акаунт | Всі |
+| DELETE | `/api/users/me/delete/` | Видалити власний акаунт | Всі |
+| DELETE | `/api/users/<pk>/delete/` | Видалити акаунт по ID | Admin / Manager |
 | POST | `/api/users/me/premium/mock/` | Отримати преміум акаунт | Buyer/Seller |
-| PATCH | `/api/users/<pk>/block/`      | Заблокувати юзера | Admin / Manager |
-| PATCH | `/api/users/<pk>/unblock/`    | Розблокувати юзера | Admin / Manager |
-| PATCH | `/api/users/<pk>/manager/`    | Призначити менеджера | Admin |
+| PATCH | `/api/users/<pk>/block/` | Заблокувати юзера | Admin / Manager |
+| PATCH | `/api/users/<pk>/unblock/` | Розблокувати юзера | Admin / Manager |
+| PATCH | `/api/users/<pk>/manager/` | Призначити менеджера | Admin |
 
 ### Listings
 
@@ -297,7 +287,6 @@ Celery використовується для фонових задач та п
 | `update_listings_prices_task` | Після оновлення курсів | Перерахунок цін оголошень |
 | `moderation_listings_task` | При створенні/редагуванні | Перевірка на нецензурну лексику |
 
----
 ### Примусовий запуск оновлення курсів (для тестування)
 
 ```bash
@@ -307,6 +296,7 @@ docker compose exec celery celery -A config call apps.payment.tasks.fetch_curren
 Після виконання:
 - в таблиці `currency_rate` з'явиться новий запис з актуальним курсом
 - ціни всіх активних оголошень автоматично перерахуються
+
 ---
 
 ## Фільтрація і пошук
@@ -429,10 +419,6 @@ docker compose restart app
 
 # Зупинити проект
 docker compose down
-
-# Очистити всі дані (контейнери + volume)
-docker compose down -v
-rm -rf ./mysql
 ```
 
 ---

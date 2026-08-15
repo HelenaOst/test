@@ -7,6 +7,9 @@ from django.db import OperationalError, connection
 class Command(BaseCommand):
     """Команда для очікування готовності бази даних перед запуском."""
 
+    # Ця команда не використовується, оскільки проект працює з хмарною БД Railway.
+    # Залишено для діагностики проблем з підключенням.
+
     def handle(self, *args, **options):
         self.stdout.write("Waiting database...")
         db_ready = False
