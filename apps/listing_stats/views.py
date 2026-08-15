@@ -1,3 +1,4 @@
+from rest_framework import status
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
 
@@ -7,6 +8,7 @@ from apps.core.permissions.permissions import HasPermissionCodename, IsOwner
 from apps.listing.models import Listing
 from apps.listing_stats.serializers import ListingStatsSerializer
 from apps.listing_stats.services import ListingStatsService
+from apps.users.models import Profile, Role
 
 
 @extend_schema(
@@ -23,6 +25,13 @@ class ListingStatsView(RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         listing = self.get_object()
+        # перевірка преміум акаунту (менеджер і адмін проходять без перевірки)
+        if not request.user.is_superuser and (not request.user.role or request.user.role.name != Role.RoleName.MANAGER):
+            if not request.user.profile or request.user.profile.account_type != Profile.AccountType.PREMIUM:
+                return Response(
+                    {'message': 'Premium account required.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
         stats = ListingStatsService.get_stats(listing)
         serializer = self.get_serializer(stats)
         return Response(serializer.data)
