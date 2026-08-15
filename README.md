@@ -80,7 +80,11 @@ docker compose exec app python manage.py migrate
 
 ```bash
 docker compose exec app python manage.py loaddata regions.json
+```
+```bash
 docker compose exec app python manage.py loaddata brands.json
+```
+```bash
 docker compose exec app python manage.py loaddata car_models.json
 ```
 
