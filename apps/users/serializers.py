@@ -24,6 +24,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         fields = ['name', 'logo', 'description']
 
 class ProfileUpgradeSerializer(serializers.ModelSerializer):
+    """Серіалізатор для оновлення тарифу (basic/premium)."""
+
     class Meta:
         model = Profile
         fields = ['account_type', 'account_expires_at']
@@ -31,6 +33,8 @@ class ProfileUpgradeSerializer(serializers.ModelSerializer):
 
 
 class UserReadSerializer(serializers.ModelSerializer):
+    """Серіалізатор для читання даних користувача з роллю та профілем."""
+
     role = RoleSerializer(read_only=True)
     profile = ProfileReadSerializer()
 
@@ -41,6 +45,11 @@ class UserReadSerializer(serializers.ModelSerializer):
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    """
+    Серіалізатор для одночасного оновлення користувача та його профілю.
+    Приймає avatar, phone та дані профілю.
+    """
+
     profile = ProfileUpdateSerializer()
 
     class Meta:
@@ -51,15 +60,15 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         profile_data = validated_data.pop('profile', {})
 
         with transaction.atomic():
-            # UPDATE USER
+            # Оновлення даних користувача
             instance = super().update(instance, validated_data)
 
-            # UPDATE PROFILE
+            # Оновлення профілю (часткове оновлення)
             if profile_data and instance.profile:
                 profile_serializer = ProfileUpdateSerializer(
                     instance.profile,
                     data=profile_data,
-                    partial=True # оновлення тільки надісланих полів
+                    partial=True
                 )
                 profile_serializer.is_valid(raise_exception=True)
                 profile_serializer.save()

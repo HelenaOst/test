@@ -2,6 +2,11 @@ from rest_framework import serializers
 
 
 class ListingStatsSerializer(serializers.Serializer):
+    """
+    Серіалізатор для статистики оголошення.
+    Містить перегляди та порівняння цін з ринком.
+    """
+
     id = serializers.IntegerField(read_only=True)
     views_total = serializers.IntegerField(read_only=True)
     views_day = serializers.IntegerField(read_only=True)

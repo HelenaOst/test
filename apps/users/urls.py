@@ -14,6 +14,7 @@ from apps.users.views import (
 )
 
 urlpatterns = [
+    # Ендпоінти доступу до користиувачів платформи
     path('', UserListView.as_view()),
     path('me/', UserMeView.as_view()),
     path('me/update/', UserMeUpdateView.as_view()),

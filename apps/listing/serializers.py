@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from apps.cars.serializers import CarModelReadSerializer
 from apps.listing.models import CarImage, Listing, Region
-from apps.users.models import Role, User
+from apps.users.models import Role
 
 
 class RegionSerializer(serializers.ModelSerializer):
@@ -20,7 +20,7 @@ class ImageSerializer(serializers.ModelSerializer):
 
 
 class ImageUploadSerializer(serializers.ModelSerializer):
-    # Дозволяємо приймати список файлів через ListField
+    """Серіалізатор для завантаження кількох фото до оголошення."""
     uploaded_images = serializers.ListField(
         child=serializers.ImageField(max_length=1000000, allow_empty_file=False, use_url=False),
         write_only=True
@@ -46,12 +46,14 @@ class ImageUploadSerializer(serializers.ModelSerializer):
                 CarImage(listing_id=listing_id, image=image, is_main=is_main)
             )
 
-        # всі об'єкти в базі одним SQL-запитом
+        # Масове створення одним запитом
         CarImage.objects.bulk_create(car_images)
         return car_images
 
 
 class ListingReadSerializer(serializers.ModelSerializer):
+    """Серіалізатор для читання оголошень з усіма зв'язками."""
+
     region = RegionSerializer(read_only=True)
     images = ImageSerializer(many=True, read_only=True, source='car_images')
     car_model = CarModelReadSerializer(read_only=True)
@@ -87,6 +89,8 @@ class ListingReadSerializer(serializers.ModelSerializer):
 
 
 class ListingWriteSerializer(serializers.ModelSerializer):
+    """Серіалізатор для створення/оновлення оголошень з перевіркою прав."""
+
     class Meta:
         model = Listing
         fields = [
@@ -110,15 +114,13 @@ class ListingWriteSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
 
         with transaction.atomic():
-            if user.role and user.role.name == Role.RoleName.ADMIN:
+            # Заборона створення для адмінів та менеджерів
+            if user.role and user.role.name in [Role.RoleName.ADMIN, Role.RoleName.MANAGER]:
                 raise serializers.ValidationError(
-                    {'message': 'The admin cannot create listing.'}
+                    {'message': f'{user.role.name} cannot create listing.'}
                 )
-            if user.role and user.role.name == Role.RoleName.MANAGER:
-                raise serializers.ValidationError(
-                    {'message': 'The manager cannot create listing.'}
-                )
-            ## перевірка ліміту для базового акаунту
+
+            # Перевірка ліміту для базового акаунту (одне активне оголошення)
             if user.profile.account_type == 'basic':
                 existing = Listing.objects.filter(
                     owner=user,
@@ -139,9 +141,11 @@ class ListingWriteSerializer(serializers.ModelSerializer):
             return Listing.objects.create(owner=user, **validated_data)
 
 class ListingModerationSerializer(serializers.ModelSerializer):
+    """Серіалізатор для зміни статусу оголошення при модерації."""
     class Meta:
         model = Listing
         fields = ['status']
 
 class SendReportSerializer(serializers.Serializer):
+    """Серіалізатор для надсилання скарги на оголошення."""
     message = serializers.CharField()

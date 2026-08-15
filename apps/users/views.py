@@ -18,15 +18,18 @@ UserModel = get_user_model()
 
 @extend_schema(
     summary="Отримати список користувачів",
-    description="Адміністратор має повний доступ до всіх користувачів. Менеджер бачить лише покупців і продавців",
+    description="Адміністратор має повний доступ. Менеджер бачить лише покупців і продавців",
 )
 class UserListView(generics.ListAPIView):
+    """Список користувачів з фільтрацією за ролями."""
+
     serializer_class = UserReadSerializer
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_view_users'
 
     def get_queryset(self):
         qs = UserModel.objects.select_related('profile', 'role')
+        # Менеджери не бачать адмінів та інших менеджерів
         if not self.request.user.is_superuser:
             qs = qs.filter(is_superuser=False).exclude(role__name=Role.RoleName.MANAGER)
         return qs
@@ -34,15 +37,18 @@ class UserListView(generics.ListAPIView):
 
 @extend_schema(
     summary="Отримати акаунт користувача",
-    description="Дає можливість подивитись дані конкретного корситувача по ID. Адміністратор має повний доступ до всіх користувачів. Менеджер бачить лише покупців і продавців",
+    description="Перегляд даних конкретного користувача по ID.",
 )
 class UserDetailView(generics.RetrieveAPIView):
+    """Детальний перегляд користувача."""
+
     serializer_class = UserReadSerializer
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_view_user_by_id'
 
     def get_queryset(self):
         qs = UserModel.objects.select_related('profile', 'role').all()
+        # Менеджери не бачать адмінів
         if not self.request.user.is_superuser:
             qs = qs.filter(is_superuser=False)
         return qs
@@ -50,9 +56,11 @@ class UserDetailView(generics.RetrieveAPIView):
 
 @extend_schema(
     summary="Видалити користувача",
-    description="Видалення користувача по ID. Доступно для менеджерів і адміністраторів"
+    description="М'яке видалення користувача по ID.",
 )
 class UserDeleteView(generics.DestroyAPIView):
+    """М'яке видалення користувача з перевіркою прав."""
+
     queryset = UserModel.objects.select_related('profile', 'role').filter(deleted_at__isnull=True)
     serializer_class = UserProfileUpdateSerializer
     permission_classes = [HasPermissionCodename]
@@ -61,19 +69,21 @@ class UserDeleteView(generics.DestroyAPIView):
     def destroy(self, *args, **kwargs):
         user = self.get_object()
 
-        # щоб не видалити себе
+        # Заборона видалення себе
         if user == self.request.user:
             return Response(
                 {'message': 'You cannot delete yourself.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # щоб не видалити адміна
+        # Заборона видалення адміна
         if user.is_superuser or (user.role and user.role.name == Role.RoleName.ADMIN):
             return Response(
                 {'message': 'You cannot delete admin.'},
                 status=status.HTTP_403_FORBIDDEN
             )
+
+        # Заборона видалення менеджера (крім суперадміна)
         if user.role and user.role.name == Role.RoleName.MANAGER and not self.request.user.is_superuser:
             return Response(
                 {'message': 'You cannot delete another manager.'},
@@ -89,9 +99,11 @@ class UserDeleteView(generics.DestroyAPIView):
 
 @extend_schema(
     summary="Отримати власний акаунт",
-    description="Доступно лише власнику акаунта"
+    description="Доступно лише власнику.",
 )
 class UserMeView(generics.RetrieveAPIView):
+    """Перегляд власного акаунту."""
+
     permission_classes = [HasPermissionCodename]
     serializer_class = UserReadSerializer
     required_permission = 'can_view_own_account'
@@ -102,9 +114,11 @@ class UserMeView(generics.RetrieveAPIView):
 
 @extend_schema(
     summary="Оновити власний акаунт",
-    description="Доступно лише власнику акаунта"
+    description="Часткове оновлення власного акаунту.",
 )
 class UserMeUpdateView(generics.UpdateAPIView):
+    """Оновлення власного акаунту та профілю."""
+
     permission_classes = [HasPermissionCodename]
     serializer_class = UserProfileUpdateSerializer
     required_permission = 'can_update_own_account'
@@ -113,9 +127,9 @@ class UserMeUpdateView(generics.UpdateAPIView):
     def get_object(self):
         return self.request.user
 
-    # створюємо профіль для адміна(суперюзера)
     def perform_update(self, serializer):
         user = self.request.user
+        # Автоматичне створення профілю для суперадміна (якщо відсутній)
         profile = getattr(user, 'profile', None)
         if profile is None:
             profile = Profile.objects.create(name=user.username)
@@ -126,9 +140,11 @@ class UserMeUpdateView(generics.UpdateAPIView):
 
 @extend_schema(
     summary="Видалити власний акаунт",
-    description="Доступно лише власнику акаунта"
+    description="М'яке видалення власного акаунту.",
 )
 class UserMeDeleteView(generics.DestroyAPIView):
+    """М'яке видалення власного акаунту."""
+
     permission_classes = [HasPermissionCodename]
     serializer_class = UserProfileUpdateSerializer
     required_permission = 'can_delete_own_account'
@@ -138,11 +154,10 @@ class UserMeDeleteView(generics.DestroyAPIView):
 
     def destroy(self, *args, **kwargs):
         user = self.get_object()
+        # Заборона видалення суперадміна
         if user.is_superuser:
             return Response(
-                {
-                    "detail": "Administrator account cannot be deleted."
-                },
+                {"detail": "Administrator account cannot be deleted."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         user.soft_delete()
@@ -154,33 +169,36 @@ class UserMeDeleteView(generics.DestroyAPIView):
 
 @extend_schema(
     summary="Заблокувати користувача",
-    description="Блокування акаунту по ID. Доступно менеджерам і адміністраторам"
+    description="Блокування акаунту по ID.",
 )
 class UserBlockView(GenericAPIView):
+    """Блокування користувача (is_active = False)."""
+
     queryset = UserModel.objects.select_related('profile', 'role').all()
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_block_unblock_user'
 
     def get_object(self):
-        return get_object_or_404(
-            self.get_queryset(),
-            pk=self.kwargs['pk'])
+        return get_object_or_404(self.get_queryset(), pk=self.kwargs['pk'])
 
     def patch(self, request, *args, **kwargs):
         user = self.get_object()
 
-        # менеджер не блоконе тепер себе
+        # Заборона блокування себе
         if user == request.user:
             return Response(
                 {'message': 'You cannot block yourself.'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        # щоб не був заблокований адмін
+
+        # Заборона блокування адміна
         if user.is_superuser or (user.role and user.role.name == Role.RoleName.ADMIN):
             return Response(
                 {'message': 'You cannot block admin.'},
                 status=status.HTTP_403_FORBIDDEN
             )
+
+        # Заборона блокування менеджера (крім суперадміна)
         if user.role and user.role.name == Role.RoleName.MANAGER and not self.request.user.is_superuser:
             return Response(
                 {'message': 'You cannot block another manager.'},
@@ -210,27 +228,29 @@ class UserBlockView(GenericAPIView):
 
 @extend_schema(
     summary="Розблокувати користувача",
-    description="Розблокування акаунту по ID. Доступно менеджерам і адміністраторам"
+    description="Розблокування акаунту по ID.",
 )
 class UserUnblockView(generics.GenericAPIView):
+    """Розблокування користувача (is_active = True)."""
+
     queryset = UserModel.objects.select_related('profile', 'role').all()
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_block_unblock_user'
 
     def get_object(self):
-        return get_object_or_404(
-            self.get_queryset(),
-            pk=self.kwargs['pk'])
+        return get_object_or_404(self.get_queryset(), pk=self.kwargs['pk'])
 
     def patch(self, request, *args, **kwargs):
         user = self.get_object()
 
-        # щоб не був заблокований адмін
+        # Заборона розблокування адміна
         if user.is_superuser or (user.role and user.role.name == Role.RoleName.ADMIN):
             return Response(
                 {'message': 'You cannot unblock admin.'},
                 status=status.HTTP_403_FORBIDDEN
             )
+
+        # Заборона розблокування менеджера (крім суперадміна)
         if user.role and user.role.name == Role.RoleName.MANAGER and not self.request.user.is_superuser:
             return Response(
                 {'message': 'You cannot unblock another manager.'},
@@ -259,18 +279,18 @@ class UserUnblockView(generics.GenericAPIView):
 
 
 @extend_schema(
-    summary="Створити менеджера",
-    description="Перетворює зареєстрованого юзера в менеджера по ID. Доступно лише адміністраторам"
+    summary="Призначити менеджера",
+    description="Перетворює користувача на менеджера по ID.",
 )
 class UserToManagerView(GenericAPIView):
+    """Призначення користувача менеджером."""
+
     queryset = UserModel.objects.select_related('profile', 'role').all()
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_create_manager'
 
     def get_object(self):
-        return get_object_or_404(
-            self.get_queryset(),
-            pk=self.kwargs['pk'])
+        return get_object_or_404(self.get_queryset(), pk=self.kwargs['pk'])
 
     def patch(self, request, *args, **kwargs):
         user = self.get_object()
@@ -278,15 +298,16 @@ class UserToManagerView(GenericAPIView):
         user.role = manager_role
         user.save()
         serializer = UserReadSerializer(user)
-        return Response(serializer.data,
-                        status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @extend_schema(
-    summary="Надати преміум акаунту",
-    description="Функціонал оплати реалізований як заглушка — без реальної платіжної системи. При натисканні преміум активується одразу без оплати на 30 днів. У реальному проекті цей ендпоінт замінюється на інтеграцію з платіжним сервісом"
+    summary="Надати преміум акаунт",
+    description="Активація преміум-статусу на 30 днів (заглушка).",
 )
 class UserToPremiumView(GenericAPIView):
+    """Активація преміум-акаунту на 30 днів (заглушка для оплати)."""
+
     permission_classes = [HasPermissionCodename]
     required_permission = 'can_be_premium_user'
     serializer_class = ProfileUpgradeSerializer
@@ -296,20 +317,13 @@ class UserToPremiumView(GenericAPIView):
 
         if profile is None:
             return Response(
-                {
-                    "detail": "User profile was not found."
-                },
+                {"detail": "User profile was not found."},
                 status=status.HTTP_404_NOT_FOUND
             )
+
         profile.account_type = Profile.AccountType.PREMIUM
         profile.account_expires_at = timezone.now() + datetime.timedelta(days=30)
-        profile.save(
-            update_fields=[
-                'account_type',
-                'account_expires_at']
-        )
+        profile.save(update_fields=['account_type', 'account_expires_at'])
+
         serializer = self.get_serializer(profile)
-        return Response(
-            serializer.data,
-            status=status.HTTP_200_OK
-        )
+        return Response(serializer.data, status=status.HTTP_200_OK)

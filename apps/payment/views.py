@@ -5,13 +5,17 @@ from apps.payment.models import CurrencyRate
 from apps.payment.serializer import CurrencyRateSerializer
 
 
-# Create your views here.
 class CurrencyRateView(RetrieveAPIView):
+    """
+    Повертає останній актуальний курс валют.
+    Доступно без авторизації.
+    """
     queryset = CurrencyRate.objects.all()
     permission_classes = [AllowAny]
     serializer_class = CurrencyRateSerializer
 
     def get_object(self):
+        # Отримуємо найсвіжіший запис курсу валют
         return get_object_or_404(
             CurrencyRate.objects.order_by('-date')
         )
