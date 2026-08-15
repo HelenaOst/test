@@ -1,8 +1,8 @@
 import os
 
-#mailtrap
-# SMTP backend для продакшену (розкоментувати і налаштувати)
+# ==================== EMAIL НАЛАШТУВАННЯ ====================
 
+# SMTP бекенд для продакшену (Mailtrap або реальний SMTP)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST')
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
@@ -12,6 +12,7 @@ EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_HOST_USER')
 MANAGERS_EMAIL = os.environ.get('MANAGERS_EMAIL', 'moderation@automarket.com')
 
-# Console backend для розробки
-#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-#MANAGERS_EMAIL = os.environ.get('MANAGERS_EMAIL', 'moderation@automarket.com')
+# ==================== ДЛЯ РОЗРОБКИ (розкоментувати) ====================
+# Console backend - виводить листи в консоль замість відправки
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# MANAGERS_EMAIL = os.environ.get('MANAGERS_EMAIL', 'moderation@automarket.com')

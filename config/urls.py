@@ -1,19 +1,11 @@
 """
-URL configuration for config project.
+URL конфігурація для проекту.
 
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+Підключає:
+- Swagger/ReDoc документацію API
+- Додатки: auth, users, cars, listings, payment, statistics
 """
+
 from django.contrib import admin
 from django.urls import include, path
 
@@ -24,25 +16,19 @@ from drf_spectacular.views import (
 )
 
 urlpatterns = [
+    # Адмінка Django
     path('admin/', admin.site.urls),
 
+    # ========== API ДОКУМЕНТАЦІЯ ==========
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
-    path(
-        'api/docs/',
-        SpectacularSwaggerView.as_view(url_name='schema'),
-        name='swagger-ui',
-    ),
-
-    path(
-        'api/redoc/',
-        SpectacularRedocView.as_view(url_name='schema'),
-        name='redoc',
-    ),
-    path("api/cars/", include('apps.cars.urls')),
+    # ========== ЕНДПОІНТИ ДОДАТКІВ ==========
     path("api/auth/", include('apps.auth.urls')),
     path("api/users/", include('apps.users.urls')),
-    path('api/listings/statistics/', include('apps.listing_stats.urls')),
+    path("api/cars/", include('apps.cars.urls')),
     path("api/listings/", include('apps.listing.urls')),
+    path('api/listings/statistics/', include('apps.listing_stats.urls')),
     path('api/payment/', include('apps.payment.urls')),
 ]
